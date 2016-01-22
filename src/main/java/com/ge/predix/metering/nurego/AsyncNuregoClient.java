@@ -18,6 +18,8 @@ package com.ge.predix.metering.nurego;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -61,6 +63,15 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
     private RestTemplate meteringRestTemplate;
 
     private DateTime nextSend;
+    private boolean batchUpdate = true;
+
+    public boolean isBatchUpdate() {
+        return batchUpdate;
+    }
+
+    public void setBatchUpdate(boolean batchUpdate) {
+        this.batchUpdate = batchUpdate;
+    }
 
     public AsyncNuregoClient(final String url, final int batchIntervalSeconds, final int batchMaxMapSize,
             final String nuregoUsername, final String nuregoPassword, final String nuregoInstanceId) {
@@ -79,7 +90,7 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
         LOGGER.debug("batchIntervalSeconds: '{}'", batchIntervalSeconds);
         LOGGER.debug("batchMaxMapSize: '{}'", batchMaxMapSize);
     }
-
+    
     @Override
     public void updateAmount(final Customer customer, final MeteredResource meter, final int amount) {
         Map<CustomerMeteredResource, Integer> tempMap = new HashMap<>();
@@ -98,6 +109,53 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
     }
 
     private void updateMeteringProvider(final Map<CustomerMeteredResource, Integer> meterEntries) {
+        if (this.batchUpdate) {
+            updateMeteringProviderPerBatch(meterEntries);
+        } else {
+            updateMeteringProviderPerSubscription(meterEntries);
+        }
+    }
+    
+    private void updateMeteringProviderPerBatch(Map<CustomerMeteredResource, Integer> meterEntries) {
+        if (meterEntries == null || meterEntries.isEmpty()) return;
+        
+        LOGGER.info("Report usage to metering provider in a batch. EntryCount = " + meterEntries.size());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("X-NUREGO-AUTHORIZATION", String.format("Bearer %s", Nurego.apiKey));
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        
+        Collection<UsageDetails> usageData = new ArrayList<UsageDetails>();
+        int id = 0;
+        for (Entry<CustomerMeteredResource, Integer> entry : meterEntries.entrySet()) {
+            CustomerMeteredResource customerMeteredResource = entry.getKey();
+            Integer entryCurrentAmount = entry.getValue();
+            
+            UsageDetails usageDetails = new UsageDetails(customerMeteredResource.getCustomer().getSubscriptionId(), 
+                    customerMeteredResource.getMeteredResource().getFeatureId(), entryCurrentAmount, 
+                    Integer.toString(id++));
+            
+            usageData.add(usageDetails);
+        }
+        
+        UsageDetailsSet usageDetailsSet = new UsageDetailsSet(usageData);
+        String usageDetailsContent = usageDetailsSet.toJSON();
+        LOGGER.debug("Usage details in JSON format are: " + usageDetailsContent);
+        
+        String url = String.format("%s/v1/usages", Nurego.getApiBase());
+
+        HttpEntity<?> request = new HttpEntity<String>(usageDetailsContent, headers);
+        LOGGER.debug("The request in spring metering filter to report usage is: " + request.toString());
+
+        try {
+            // Fire and forget.. do not wait to for the results in this thread
+            this.asyncRestTemplate.postForEntity(url, request, String.class);
+        } catch (RestClientException ex) {
+            LOGGER.error(String.format("Failed to batch update usages."));
+        }
+    }
+
+    private void updateMeteringProviderPerSubscription(Map<CustomerMeteredResource, Integer> meterEntries) {
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", String.format("bearer %s", getNuregoToken()));
@@ -106,7 +164,7 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
         Map<String, Object> usageParams = new HashMap<>();
         usageParams.put("provider", "cloud-foundry");
 
-        LOGGER.debug("start: update metering provider. entryCount = {}", meterEntries.size());
+        LOGGER.debug("start: update metering provider per subscription. entryCount = {}", meterEntries.size());
 
         for (Map.Entry<CustomerMeteredResource, Integer> entry : meterEntries.entrySet()) {
             CustomerMeteredResource customerMeteredResource = entry.getKey();
@@ -128,7 +186,7 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
                         customerMeteredResource.getMeteredResource().getFeatureId());
             }
         }
-        LOGGER.debug("end: update metering provider. entryCount = {}", meterEntries.size());
+        LOGGER.debug("end: update metering provider per subscription. entryCount = {}", meterEntries.size());
     }
 
     String getNuregoToken() {

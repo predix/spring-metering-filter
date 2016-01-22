@@ -202,7 +202,7 @@
                         <http.nonProxyHosts>${NON_PROXY_HOSTS}</http.nonProxyHosts>
                     </systemPropertyVariables>
                     <includes>
-                        <include>**/NuregoIT.java</include>
+                        <include>**/NuregoUsageByBatchIT.java</include>
                     </includes>
                 </configuration>
                 <executions>
