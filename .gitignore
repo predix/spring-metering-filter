@@ -1,0 +1,8 @@
+/target/
+.classpath
+.project
+.settings
+<<<<<<< HEAD
+/test-output/
+=======
+>>>>>>> ee411951723ffa6da89122f0ef81130043891a54

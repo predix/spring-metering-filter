@@ -1,0 +1,38 @@
+[
+        {
+            "httpMethod":"POST",
+            "uriTemplate":"/{version}/policy-evaluation",
+            "expectedHttpStatusCode": "200",
+            "featureId":"policy_eval"
+        },
+        {
+            "httpMethod":"PUT",
+            "uriTemplate":"/{version}/policy-set/{policySetId}",
+            "expectedHttpStatusCode": "201",
+            "featureId":"policyset_update"
+        },
+        {
+            "httpMethod":"POST",
+            "uriTemplate":"/oauth/token",
+            "expectedHttpStatusCode": "200",
+            "featureId":"number_of_tokens"
+        },
+        {
+            "httpMethod":"POST",
+            "uriTemplate":"/users",
+            "expectedHttpStatusCode": "201",
+            "featureId":"number_of_users"
+        },
+        {
+            "httpMethod":"POST",
+            "uriTemplate":"/uaa/oauth/token",
+            "expectedHttpStatusCode": "200",
+            "featureId":"number_of_tokens"
+        },
+        {
+            "httpMethod":"POST",
+            "uriTemplate":"/uaa/users",
+            "expectedHttpStatusCode": "201",
+            "featureId":"number_of_users"
+        }
+]
