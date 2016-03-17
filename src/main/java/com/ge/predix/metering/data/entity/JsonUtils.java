@@ -34,6 +34,7 @@ public class JsonUtils {
     }
 
     /**
+     * @param <T> generic type
      * @param fileName
      *            File Name
      * @param type
@@ -50,6 +51,7 @@ public class JsonUtils {
     }
 
     /**
+     * @param <T> generic type
      * @param object
      *            object instance to be converted into String
      * @return a JSON String representation of the object
@@ -64,6 +66,7 @@ public class JsonUtils {
     }
 
     /**
+     * @param <T> generic type
      * @param jsonString
      *            the JSON String being converted into a object instance
      * @param type
@@ -80,14 +83,16 @@ public class JsonUtils {
     }
 
     /**
+     * @param <C>
+     *            The target type of the object to be created
+     * @param <T>
+     *            The target type of the object to be created
      * @param jsonString
      *            the JSON String being converted into a object instance
      * @param collectionType
      *            The type of the collection, ex: Set, List, etc.
      * @param elementType
      *            The type of the elements on this collection
-     * @param type
-     *            The target type of the object to be created
      * @return The type of the target class
      */
     public <C extends Collection<T>, T> C deserialize(final String jsonString, final Class<C> collectionType,
@@ -119,6 +124,7 @@ public class JsonUtils {
     }
 
     /**
+     * @param <T> generic type
      * @param object
      *            The source object to be converted into a JsonNode
      * @return The corresponding JsonNode of the given Object
