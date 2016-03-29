@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2016 General Electric Company.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *******************************************************************************/
 package com.ge.predix.metering.filter;
 
 import java.util.ArrayList;
@@ -22,7 +37,7 @@ import com.ge.predix.metering.customer.Customer;
 import com.ge.predix.metering.data.entity.MeteredResource;
 import com.ge.predix.metering.nurego.AsyncNuregoClient;
 
-@Test(dependsOnGroups="asyncNuregoSingleThreadedTest")
+@Test(dependsOnGroups = "asyncNuregoSingleThreadedTest")
 public class AsyncNuregoClientMultiThreadTest {
 
     private static final String SUBSCRIPTION_1 = "subscription_123";
@@ -57,21 +72,19 @@ public class AsyncNuregoClientMultiThreadTest {
         this.asyncNuregoClient.setAsyncRestTemplate(asyncRestTemplate);
     }
 
-    
-    @Test(threadPoolSize=5, invocationCount=5, dataProvider="meterDataProvider")
-    public void testUpdateAmount(Customer customer, MeteredResource meter, int amount) {
-          this.asyncNuregoClient.updateAmount(customer, meter, amount);
+    @Test(threadPoolSize = 5, invocationCount = 5, dataProvider = "meterDataProvider")
+    public void testUpdateAmount(final Customer customer, final MeteredResource meter, final int amount) {
+        this.asyncNuregoClient.updateAmount(customer, meter, amount);
     }
-    
+
     /**
-     * This test asserts the cumulative count of updates executed in {@link #testUpdateAmount()} with mutliple 
-     * threads
+     * This test asserts the cumulative count of updates executed in {@link #testUpdateAmount()} with mutliple threads
      */
-    @Test(dependsOnMethods="testUpdateAmount")
+    @Test(dependsOnMethods = "testUpdateAmount")
     public void testAssertMeterData() {
-        //flush any updates in cache
+        // flush any updates in cache
         this.asyncNuregoClient.flushMeterUpdates();
-        
+
         Map<String, Integer> recordsReceivedByProvider = new HashMap<>();
         for (Record record : this.records) {
             String key = record.getSubscriptionId() + record.getFeatureId();
@@ -82,35 +95,27 @@ public class AsyncNuregoClientMultiThreadTest {
                 recordsReceivedByProvider.put(key, currentAmount + record.getAmount());
             }
         }
-        
+
         Assert.assertEquals(recordsReceivedByProvider.size(), 4);
-        Assert.assertEquals(recordsReceivedByProvider.get(SUBSCRIPTION_1+FEATURE_1), new Integer(5));
-        Assert.assertEquals(recordsReceivedByProvider.get(SUBSCRIPTION_1+FEATURE_2), new Integer(5));
-        Assert.assertEquals(recordsReceivedByProvider.get(SUBSCRIPTION_2+FEATURE_1), new Integer(5));
-        Assert.assertEquals(recordsReceivedByProvider.get(SUBSCRIPTION_2+FEATURE_2), new Integer(5));
+        Assert.assertEquals(recordsReceivedByProvider.get(SUBSCRIPTION_1 + FEATURE_1), new Integer(5));
+        Assert.assertEquals(recordsReceivedByProvider.get(SUBSCRIPTION_1 + FEATURE_2), new Integer(5));
+        Assert.assertEquals(recordsReceivedByProvider.get(SUBSCRIPTION_2 + FEATURE_1), new Integer(5));
+        Assert.assertEquals(recordsReceivedByProvider.get(SUBSCRIPTION_2 + FEATURE_2), new Integer(5));
 
     }
 
-    
     private final static String FEATURE_1 = "f1";
     private final static String FEATURE_2 = "f2";
-    
+
     @DataProvider(parallel = true)
     public Object[][] meterDataProvider() {
         Customer customer_1 = new Customer(null, SUBSCRIPTION_1);
         Customer customer_2 = new Customer(null, SUBSCRIPTION_2);
-        return new Object[][] {
-                new Object[] { customer_1, new MeteredResource("POST", "/users", 201, FEATURE_1),
-                        1 },
-                new Object[] { customer_1, new MeteredResource("POST", "/users", 201, FEATURE_2),
-                        1 },
-                new Object[] { customer_2, new MeteredResource("POST", "/users", 201, FEATURE_1),
-                        1 },
-                new Object[] { customer_2, new MeteredResource("POST", "/users", 201, FEATURE_2),
-                        1 }
-                 };
+        return new Object[][] { new Object[] { customer_1, new MeteredResource("POST", "/users", 201, FEATURE_1), 1 },
+                new Object[] { customer_1, new MeteredResource("POST", "/users", 201, FEATURE_2), 1 },
+                new Object[] { customer_2, new MeteredResource("POST", "/users", 201, FEATURE_1), 1 },
+                new Object[] { customer_2, new MeteredResource("POST", "/users", 201, FEATURE_2), 1 } };
     }
-
 
     static class Record {
         private final String subscriptionId;

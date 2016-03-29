@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2016 General Electric Company.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *******************************************************************************/
 package com.ge.predix.metering.nurego;
 
 import java.util.Collections;
@@ -14,8 +29,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.RestClientException;
@@ -78,7 +91,7 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
         updateMeteringProvider(tempMap);
     }
 
-    private void updateMeteringProvider(Map<CustomerMeteredResource, Integer> meterEntries) {
+    private void updateMeteringProvider(final Map<CustomerMeteredResource, Integer> meterEntries) {
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("X-NUREGO-AUTHORIZATION", String.format("Bearer %s", Nurego.apiKey));
@@ -87,7 +100,7 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
         Map<String, Object> usageParams = new HashMap<String, Object>();
         usageParams.put("provider", "cloud-foundry");
 
-        LOGGER.info("start: update metering provider. entryCount = "+meterEntries.size());
+        LOGGER.info("start: update metering provider. entryCount = " + meterEntries.size());
 
         for (Entry<CustomerMeteredResource, Integer> entry : meterEntries.entrySet()) {
             CustomerMeteredResource customerMeteredResource = entry.getKey();
@@ -99,7 +112,7 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
             usageParams.put("amount", entryCurrentAmount);
 
             HttpEntity<?> request = new HttpEntity<Map<String, Object>>(usageParams, headers);
-            
+
             LOGGER.debug("The request in spring metering filter is :" + request.toString());
             try {
                 // Fire and forget.. do not wait to for the results in this thread
@@ -109,7 +122,7 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
                         customerMeteredResource.getMeteredResource().getFeatureId()));
             }
         }
-        LOGGER.info("end: update metering provider. entryCount = "+meterEntries.size());
+        LOGGER.info("end: update metering provider. entryCount = " + meterEntries.size());
     }
 
     private boolean isTimeToSend() {

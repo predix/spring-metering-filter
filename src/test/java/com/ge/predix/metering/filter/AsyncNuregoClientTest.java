@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2016 General Electric Company.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *******************************************************************************/
 package com.ge.predix.metering.filter;
 
 import static org.mockito.Mockito.mock;
@@ -51,14 +66,14 @@ public class AsyncNuregoClientTest {
         nuregoClient.updateAmount(new Customer(null, SUBSCRIPTION_1), meter, 1);
         nuregoClient.updateAmount(new Customer(null, SUBSCRIPTION_2), meter, 1);
         @SuppressWarnings("unchecked")
-        Map<CustomerMeteredResource, Integer> internalState = (Map<CustomerMeteredResource, Integer>) Whitebox.getInternalState(nuregoClient,
-                "updateMap");
+        Map<CustomerMeteredResource, Integer> internalState = (Map<CustomerMeteredResource, Integer>) Whitebox
+                .getInternalState(nuregoClient, "updateMap");
         Assert.assertEquals(internalState.size(), 2);
 
         nuregoClient.updateAmount(new Customer(null, SUBSCRIPTION_3), meter, 1);
         @SuppressWarnings("unchecked")
-        Map<CustomerMeteredResource, Integer> internalState2 = (Map<CustomerMeteredResource, Integer>) Whitebox.getInternalState(nuregoClient,
-                "updateMap");
+        Map<CustomerMeteredResource, Integer> internalState2 = (Map<CustomerMeteredResource, Integer>) Whitebox
+                .getInternalState(nuregoClient, "updateMap");
         Assert.assertEquals(internalState2.size(), 0);
     }
 
@@ -72,15 +87,15 @@ public class AsyncNuregoClientTest {
         Customer customer = new Customer(null, SUBSCRIPTION_1);
         nuregoClient.updateAmount(customer, meter, 1);
         @SuppressWarnings("unchecked")
-        Map<CustomerMeteredResource, Integer> internalState = (Map<CustomerMeteredResource, Integer>) Whitebox.getInternalState(nuregoClient,
-                "updateMap");
+        Map<CustomerMeteredResource, Integer> internalState = (Map<CustomerMeteredResource, Integer>) Whitebox
+                .getInternalState(nuregoClient, "updateMap");
         Assert.assertEquals(internalState.size(), 1);
         Thread.sleep(3000);
 
         nuregoClient.updateAmount(customer, meter, 1);
         @SuppressWarnings("unchecked")
-        Map<CustomerMeteredResource, Integer> internalState2 = (Map<CustomerMeteredResource, Integer>) Whitebox.getInternalState(nuregoClient,
-                "updateMap");
+        Map<CustomerMeteredResource, Integer> internalState2 = (Map<CustomerMeteredResource, Integer>) Whitebox
+                .getInternalState(nuregoClient, "updateMap");
         Assert.assertEquals(internalState2.size(), 0);
     }
 
