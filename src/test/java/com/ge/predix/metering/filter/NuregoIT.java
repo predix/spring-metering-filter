@@ -68,8 +68,9 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
         Double beforeUsedAmount = getEntitlementUsageByFeatureId(featureId, subscriptionId);
 
         this.meteringFilter.doFilter(request, response, new MockFilterChain());
-        Thread.sleep(2100);
         this.meteringFilter.doFilter(request, response, new MockFilterChain());
+        //2-3 second delay doesnt seem to be enough for the nurego server to reflect the udpated count.
+        Thread.sleep(5000);
 
         Double afterUsedAmount = getEntitlementUsageByFeatureId(featureId, subscriptionId);
         Assert.assertEquals(afterUsedAmount - beforeUsedAmount, 2.0);

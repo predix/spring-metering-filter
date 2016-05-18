@@ -27,7 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 
 public class ZoneBasedCustomerResolver implements CustomerResolver {
 
-    @Value("${METER_BASE_DOMAIN}")
+    @Value("${METER_BASE_DOMAIN:localhost}")
     private String serviceBaseDomain;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZoneBasedCustomerResolver.class);
