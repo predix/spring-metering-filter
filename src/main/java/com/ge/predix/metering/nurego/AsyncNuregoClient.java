@@ -29,7 +29,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.util.concurrent.ListenableFuture;
+import org.springframework.util.concurrent.ListenableFutureCallback;
 import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.RestClientException;
 
@@ -116,7 +119,22 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
             LOGGER.debug("The request in spring metering filter is :" + request.toString());
             try {
                 // Fire and forget.. do not wait to for the results in this thread
-                this.asyncRestTemplate.postForEntity(url, request, String.class);
+                ListenableFuture<ResponseEntity<String>> future =
+                        this.asyncRestTemplate.postForEntity(url, request, String.class);
+
+                future.addCallback(new ListenableFutureCallback<ResponseEntity>() {
+                    @Override
+                    public void onSuccess(final ResponseEntity result) {
+                        LOGGER.info("Response received (async callable): " + result.getStatusCode());
+                        // Need assertions
+                    }
+
+                    @Override
+                    public void onFailure(final Throwable t) {
+                        // Need assertions
+                        LOGGER.error("Response failed.", t);
+                    }
+                });
             } catch (RestClientException ex) {
                 LOGGER.error(String.format("Failed to update usage for featureId '%s'.",
                         customerMeteredResource.getMeteredResource().getFeatureId()));

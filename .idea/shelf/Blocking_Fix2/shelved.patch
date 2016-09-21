@@ -1,0 +1,96 @@
+Index: src/main/java/com/ge/predix/metering/nurego/AsyncNuregoClient.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ge/predix/metering/nurego/AsyncNuregoClient.java	(revision 2760fb9bc301b882cc353f31e775fc5e6c50aa2d)
++++ src/main/java/com/ge/predix/metering/nurego/AsyncNuregoClient.java	(revision )
+@@ -29,7 +29,10 @@
+ import org.springframework.http.HttpEntity;
+ import org.springframework.http.HttpHeaders;
+ import org.springframework.http.MediaType;
++import org.springframework.http.ResponseEntity;
+ import org.springframework.stereotype.Component;
++import org.springframework.util.concurrent.ListenableFuture;
++import org.springframework.util.concurrent.ListenableFutureCallback;
+ import org.springframework.web.client.AsyncRestTemplate;
+ import org.springframework.web.client.RestClientException;
+ 
+@@ -76,8 +79,18 @@
+             CustomerMeteredResource update = new CustomerMeteredResource(customer, meter);
+             Integer currentAmount = this.updateMap.get(update);
+             if (null == currentAmount) {
++                LOGGER.info("The updated amount for\n "
++                        + update.toString()
++                        + "\nwith amount\n "
++                        + amount);
+                 this.updateMap.put(update, amount);
+             } else {
++                LOGGER.info("The updated amount for\n "
++                        + update.toString()
++                        + "\n with amount\n "
++                        + amount
++                        + "\n and total amount\n "
++                        + (currentAmount + amount));
+                 this.updateMap.put(update, currentAmount + amount);
+             }
+ 
+@@ -116,7 +129,22 @@
+             LOGGER.debug("The request in spring metering filter is :" + request.toString());
+             try {
+                 // Fire and forget.. do not wait to for the results in this thread
++                ListenableFuture<ResponseEntity<String>> future =
+-                this.asyncRestTemplate.postForEntity(url, request, String.class);
++                        this.asyncRestTemplate.postForEntity(url, request, String.class);
++
++                future.addCallback(new ListenableFutureCallback<ResponseEntity>() {
++                    @Override
++                    public void onSuccess(final ResponseEntity result) {
++                        LOGGER.info("Response received (async callable): " + result.getStatusCode());
++                        // Need assertions
++                    }
++
++                    @Override
++                    public void onFailure(final Throwable t) {
++                        // Need assertions
++                        LOGGER.error("Response failed.", t);
++                    }
++                });
+             } catch (RestClientException ex) {
+                 LOGGER.error(String.format("Failed to update usage for featureId '%s'.",
+                         customerMeteredResource.getMeteredResource().getFeatureId()));
+Index: src/main/java/com/ge/predix/metering/filter/MeteringFilter.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ge/predix/metering/filter/MeteringFilter.java	(revision 2760fb9bc301b882cc353f31e775fc5e6c50aa2d)
++++ src/main/java/com/ge/predix/metering/filter/MeteringFilter.java	(revision )
+@@ -22,6 +22,8 @@
+ import javax.servlet.http.HttpServletRequest;
+ import javax.servlet.http.HttpServletResponse;
+ 
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
+ import org.springframework.beans.factory.annotation.Autowired;
+ import org.springframework.web.filter.OncePerRequestFilter;
+ 
+@@ -32,6 +34,7 @@
+ import com.ge.predix.metering.nurego.NuregoClient;
+ 
+ public class MeteringFilter extends OncePerRequestFilter {
++    private static final Logger LOGGER = LoggerFactory.getLogger(MeteringFilter.class);
+ 
+     @Autowired
+     private CustomerResolver customerResolver;
+@@ -69,6 +72,10 @@
+             Customer customer = this.customerResolver.resolveCustomer(request);
+             if (null != customer) {
+                 this.nuregoClient.updateAmount(customer, meter, 1);
++
++                String message = "\nUpdated Customer Meter: \n Customer: "
++                        + customer.toString() + "\n Meter: " + meter.toString() + "\n";
++                LOGGER.info(message);
+             }
+         }
+     }

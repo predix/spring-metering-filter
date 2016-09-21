@@ -22,6 +22,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -32,6 +34,7 @@ import com.ge.predix.metering.data.repository.MeteredResourceRepository;
 import com.ge.predix.metering.nurego.NuregoClient;
 
 public class MeteringFilter extends OncePerRequestFilter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MeteringFilter.class);
 
     @Autowired
     private CustomerResolver customerResolver;
@@ -69,6 +72,10 @@ public class MeteringFilter extends OncePerRequestFilter {
             Customer customer = this.customerResolver.resolveCustomer(request);
             if (null != customer) {
                 this.nuregoClient.updateAmount(customer, meter, 1);
+
+                String message = "\nUpdated Customer Meter: \n Customer: "
+                        + customer.toString() + "\n Meter: " + meter.toString() + "\n";
+                LOGGER.debug(message);
             }
         }
     }

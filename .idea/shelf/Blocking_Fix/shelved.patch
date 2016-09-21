@@ -1,0 +1,302 @@
+Index: src/main/java/com/ge/predix/metering/nurego/NuregoClient.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ge/predix/metering/nurego/NuregoClient.java	(revision 2760fb9bc301b882cc353f31e775fc5e6c50aa2d)
++++ src/main/java/com/ge/predix/metering/nurego/NuregoClient.java	(revision )
+@@ -18,9 +18,13 @@
+ import com.ge.predix.metering.customer.Customer;
+ import com.ge.predix.metering.data.entity.MeteredResource;
+ 
++import java.util.concurrent.ExecutionException;
++
++
+ public interface NuregoClient {
+ 
+-    void updateAmount(Customer customer, MeteredResource meter, int amount);
++    void updateAmount(Customer customer, MeteredResource meter, int amount)
++            throws ExecutionException, InterruptedException;
+ 
+     void logOpenCircuit();
+ }
+Index: src/main/java/com/ge/predix/metering/nurego/AsyncNuregoClient.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ge/predix/metering/nurego/AsyncNuregoClient.java	(revision 2760fb9bc301b882cc353f31e775fc5e6c50aa2d)
++++ src/main/java/com/ge/predix/metering/nurego/AsyncNuregoClient.java	(revision )
+@@ -15,11 +15,15 @@
+  *******************************************************************************/
+ package com.ge.predix.metering.nurego;
+ 
++import java.util.ArrayList;
+ import java.util.Collections;
+ import java.util.HashMap;
+ import java.util.Map;
+ import java.util.Map.Entry;
++import java.util.concurrent.ExecutionException;
++import java.util.concurrent.Future;
+ 
++
+ import org.apache.commons.lang.StringUtils;
+ import org.joda.time.DateTime;
+ import org.slf4j.Logger;
+@@ -29,6 +33,7 @@
+ import org.springframework.http.HttpEntity;
+ import org.springframework.http.HttpHeaders;
+ import org.springframework.http.MediaType;
++import org.springframework.http.ResponseEntity;
+ import org.springframework.stereotype.Component;
+ import org.springframework.web.client.AsyncRestTemplate;
+ import org.springframework.web.client.RestClientException;
+@@ -70,14 +75,26 @@
+     }
+ 
+     @Override
+-    public void updateAmount(final Customer customer, final MeteredResource meter, final int amount) {
++    public void updateAmount(final Customer customer, final MeteredResource meter, final int amount)
++            throws ExecutionException, InterruptedException {
+         Map<CustomerMeteredResource, Integer> tempMap = new HashMap<>();
+         synchronized (this.updateMap) {
+             CustomerMeteredResource update = new CustomerMeteredResource(customer, meter);
+             Integer currentAmount = this.updateMap.get(update);
++
+             if (null == currentAmount) {
++                LOGGER.info("The updated amount for\n "
++                        + update.toString()
++                        + "\nwith amount\n "
++                        + amount);
+                 this.updateMap.put(update, amount);
+             } else {
++                LOGGER.info("The updated amount for\n "
++                        + update.toString()
++                        + "\n with amount\n "
++                        + amount
++                        + "\n and total amount\n "
++                        + (currentAmount + amount));
+                 this.updateMap.put(update, currentAmount + amount);
+             }
+ 
+@@ -91,7 +108,8 @@
+         updateMeteringProvider(tempMap);
+     }
+ 
+-    private void updateMeteringProvider(final Map<CustomerMeteredResource, Integer> meterEntries) {
++    private void updateMeteringProvider(final Map<CustomerMeteredResource, Integer> meterEntries)
++            throws ExecutionException, InterruptedException {
+ 
+         HttpHeaders headers = new HttpHeaders();
+         headers.add("X-NUREGO-AUTHORIZATION", String.format("Bearer %s", Nurego.apiKey));
+@@ -102,6 +120,8 @@
+ 
+         LOGGER.info("start: update metering provider. entryCount = " + meterEntries.size());
+ 
++
++        ArrayList<Future<ResponseEntity<String>>> futures = new ArrayList<>();
+         for (Entry<CustomerMeteredResource, Integer> entry : meterEntries.entrySet()) {
+             CustomerMeteredResource customerMeteredResource = entry.getKey();
+             Integer entryCurrentAmount = entry.getValue();
+@@ -114,14 +134,42 @@
+             HttpEntity<?> request = new HttpEntity<Map<String, Object>>(usageParams, headers);
+ 
+             LOGGER.debug("The request in spring metering filter is :" + request.toString());
++
+             try {
++//                AsyncRequestCallback callback = new AsyncRequestCallback() {
++//                    @Override
++//                    public void doWithRequest(AsyncClientHttpRequest request) throws IOException {
++//                        LOGGER.info(String.valueOf(request.getURI()));
++//                    }
++//                };
++//
++//                ResponseExtractor<String> responseExtractor = new ResponseExtractor<String>() {
++//                    @Override
++//                    public String extractData(ClientHttpResponse response) throws IOException {
++//                        return response.getStatusText();
++//                    }
++//                };
++
+                 // Fire and forget.. do not wait to for the results in this thread
+-                this.asyncRestTemplate.postForEntity(url, request, String.class);
++                futures.add(this.asyncRestTemplate.postForEntity(url, request, String.class));
++
+             } catch (RestClientException ex) {
+                 LOGGER.error(String.format("Failed to update usage for featureId '%s'.",
+                         customerMeteredResource.getMeteredResource().getFeatureId()));
+             }
+         }
++
++        for (Future<ResponseEntity<String>> future : futures) {
++            try {
++                ResponseEntity<String> response = future.get();
++                LOGGER.info("Response: " + response.getBody());
++            } catch (InterruptedException e) {
++                e.printStackTrace();
++            } catch (ExecutionException e) {
++                e.printStackTrace();
++            }
++        }
++
+         LOGGER.info("end: update metering provider. entryCount = " + meterEntries.size());
+     }
+ 
+@@ -150,7 +198,13 @@
+             tempMap.putAll(this.updateMap);
+             this.updateMap.clear();
+         }
++        try {
+-        updateMeteringProvider(tempMap);
++            updateMeteringProvider(tempMap);
++        } catch (ExecutionException e) {
++            e.printStackTrace();
++        } catch (InterruptedException e) {
++            e.printStackTrace();
++        }
+     }
+ 
+     @Override
+Index: src/test/java/com/ge/predix/metering/filter/AsyncNuregoClientMultiThreadTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/test/java/com/ge/predix/metering/filter/AsyncNuregoClientMultiThreadTest.java	(revision 2760fb9bc301b882cc353f31e775fc5e6c50aa2d)
++++ src/test/java/com/ge/predix/metering/filter/AsyncNuregoClientMultiThreadTest.java	(revision )
+@@ -20,6 +20,7 @@
+ import java.util.HashMap;
+ import java.util.List;
+ import java.util.Map;
++import java.util.concurrent.ExecutionException;
+ 
+ import org.mockito.Matchers;
+ import org.mockito.Mockito;
+@@ -73,8 +74,14 @@
+     }
+ 
+     @Test(threadPoolSize = 5, invocationCount = 5, dataProvider = "meterDataProvider")
+-    public void testUpdateAmount(final Customer customer, final MeteredResource meter, final int amount) {
++    public void testUpdateAmount(final Customer customer, final MeteredResource meter, final int amount) throws ExecutionException, InterruptedException {
++        try {
+-        this.asyncNuregoClient.updateAmount(customer, meter, amount);
++            this.asyncNuregoClient.updateAmount(customer, meter, amount);
++        } catch (ExecutionException e) {
++            e.printStackTrace();
++        } catch (InterruptedException e) {
++            e.printStackTrace();
++        }
+     }
+ 
+     /**
+\ No newline at end of file
+Index: src/main/java/com/ge/predix/metering/filter/MeteringFilter.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ge/predix/metering/filter/MeteringFilter.java	(revision 2760fb9bc301b882cc353f31e775fc5e6c50aa2d)
++++ src/main/java/com/ge/predix/metering/filter/MeteringFilter.java	(revision )
+@@ -16,12 +16,15 @@
+ package com.ge.predix.metering.filter;
+ 
+ import java.io.IOException;
++import java.util.concurrent.ExecutionException;
+ 
+ import javax.servlet.FilterChain;
+ import javax.servlet.ServletException;
+ import javax.servlet.http.HttpServletRequest;
+ import javax.servlet.http.HttpServletResponse;
+ 
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
+ import org.springframework.beans.factory.annotation.Autowired;
+ import org.springframework.web.filter.OncePerRequestFilter;
+ 
+@@ -32,6 +35,7 @@
+ import com.ge.predix.metering.nurego.NuregoClient;
+ 
+ public class MeteringFilter extends OncePerRequestFilter {
++    private static final Logger LOGGER = LoggerFactory.getLogger(MeteringFilter.class);
+ 
+     @Autowired
+     private CustomerResolver customerResolver;
+@@ -68,7 +72,17 @@
+ 
+             Customer customer = this.customerResolver.resolveCustomer(request);
+             if (null != customer) {
++                try {
+-                this.nuregoClient.updateAmount(customer, meter, 1);
++                    this.nuregoClient.updateAmount(customer, meter, 1);
++                } catch (ExecutionException e) {
++                    e.printStackTrace();
++                } catch (InterruptedException e) {
++                    e.printStackTrace();
++                }
++                String message = "\nUpdated Customer Meter: \n Customer: "
++                        + customer.toString() + "\n Meter: " + meter.toString() + "\n";
++                LOGGER.info(message);
++                //System.out.println(message);
+             }
+         }
+     }
+Index: src/test/java/com/ge/predix/metering/filter/AsyncNuregoClientTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/test/java/com/ge/predix/metering/filter/AsyncNuregoClientTest.java	(revision 2760fb9bc301b882cc353f31e775fc5e6c50aa2d)
++++ src/test/java/com/ge/predix/metering/filter/AsyncNuregoClientTest.java	(revision )
+@@ -19,6 +19,7 @@
+ import static org.mockito.Mockito.when;
+ 
+ import java.util.Map;
++import java.util.concurrent.ExecutionException;
+ 
+ import org.mockito.Matchers;
+ import org.mockito.Mock;
+@@ -57,13 +58,19 @@
+     }
+ 
+     @Test
+-    public void testExceedMaxMapSize() {
++    public void testExceedMaxMapSize() throws ExecutionException, InterruptedException {
+ 
+         AsyncNuregoClient nuregoClient = new AsyncNuregoClient("https://mockNuregoUrl.com", "", 3, 3);
+         nuregoClient.setAsyncRestTemplate(this.asyncRestTemplate);
+ 
+         MeteredResource meter = new MeteredResource("POST", "/users", 201, "5813");
++        try {
+-        nuregoClient.updateAmount(new Customer(null, SUBSCRIPTION_1), meter, 1);
++            nuregoClient.updateAmount(new Customer(null, SUBSCRIPTION_1), meter, 1);
++        } catch (ExecutionException e) {
++            e.printStackTrace();
++        } catch (InterruptedException e) {
++            e.printStackTrace();
++        }
+         nuregoClient.updateAmount(new Customer(null, SUBSCRIPTION_2), meter, 1);
+         @SuppressWarnings("unchecked")
+         Map<CustomerMeteredResource, Integer> internalState = (Map<CustomerMeteredResource, Integer>) Whitebox
+@@ -78,14 +85,20 @@
+     }
+ 
+     @Test
+-    public void testExceedBatchIntervalSeconds() throws InterruptedException {
++    public void testExceedBatchIntervalSeconds() throws InterruptedException, ExecutionException {
+ 
+         AsyncNuregoClient nuregoClient = new AsyncNuregoClient("https://mockNuregoUrl.com", "", 3, 3);
+         nuregoClient.setAsyncRestTemplate(this.asyncRestTemplate);
+ 
+         MeteredResource meter = new MeteredResource("POST", "/users", 201, "5813");
+         Customer customer = new Customer(null, SUBSCRIPTION_1);
++        try {
+-        nuregoClient.updateAmount(customer, meter, 1);
++            nuregoClient.updateAmount(customer, meter, 1);
++        } catch (ExecutionException e) {
++            e.printStackTrace();
++        } catch (InterruptedException e) {
++            e.printStackTrace();
++        }
+         @SuppressWarnings("unchecked")
+         Map<CustomerMeteredResource, Integer> internalState = (Map<CustomerMeteredResource, Integer>) Whitebox
+                 .getInternalState(nuregoClient, "updateMap");
