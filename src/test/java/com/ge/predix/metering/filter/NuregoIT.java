@@ -39,11 +39,11 @@ import com.nurego.model.Subscription;
 @ContextConfiguration("classpath:integration-test-spring-context.xml")
 public class NuregoIT extends AbstractTestNGSpringContextTests {
 
-    private static final String ACS_PLAN_ID = "pla_1ba8-5fe8-474f-8211-163649417d8e";
-    private static final String ACS_SUBSCRIPTION_ID = "sub_1ed3-c08d-4c92-8c9b-710862ba893b";
-    private static final String ORGANIZATION_ID = "ff85feb9-be02-4a73-9b13-9e1970abf09c";
-    private static final String UAA_PLAN_ID = "pla_b77c-e9fd-434d-afad-c80e45f712fd";
-    private static final String UAA_SUBSCRIPTION_ID = "sub_b0b8-7fdc-4be8-8109-58bd89dce477";
+    private static final String ACS_PLAN_ID = "pla_b70d-6248-4a0b-8018-9fc6b9de29e6";
+    private static final String ACS_SUBSCRIPTION_ID = "sub_e854-2e8a-4f14-9d20-e45848e3c3ce";
+    private static final String ORGANIZATION_ID = "050e3f85-4706-4d88-8e87-7488cc84089c";
+    private static final String UAA_PLAN_ID = "pla_8f0b-d679-463c-b3d6-977c10414aba";
+    private static final String UAA_SUBSCRIPTION_ID = "sub_d5a8-ff81-4722-9251-836b5508ed54";
 
     @Autowired
     private MeteringFilter meteringFilter;
