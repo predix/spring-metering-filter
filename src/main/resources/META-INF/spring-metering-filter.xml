@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Copyright 2016 General Electric Company. 
-   
-    Licensed under the Apache License, Version 2.0 (the "License"); 
-    you may not use this file except in compliance with the License. 
+    Copyright 2016 General Electric Company.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
     You may obtain a copy of the License at
-   
+
     http://www.apache.org/licenses/LICENSE-2.0
-   
-    Unless required by applicable law or agreed to in writing, software 
-    distributed under the License is distributed on an "AS IS" BASIS, 
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-    See the License for the specific language governing permissions and 
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
     limitations under the License.
  -->
 <beans xmlns="http://www.springframework.org/schema/beans"
@@ -26,9 +26,11 @@
     <bean id="nuregoClient"
         class="com.ge.predix.metering.nurego.AsyncNuregoClient">
         <constructor-arg name="url" value="${NUREGO_API_URL}" />
-        <constructor-arg name="apiKey" value="${NUREGO_API_KEY}" />
         <constructor-arg name="batchIntervalSeconds" value="${NUREGO_BATCH_INTERVAL_SECONDS:3600}" />
         <constructor-arg name="batchMaxMapSize" value="${NUREGO_BATCH_MAX_MAP_SIZE:1024}" />
+        <constructor-arg name="nuregoUsername" value="${NUREGO_USERNAME:nuregoUsername}" />
+        <constructor-arg name="nuregoPassword" value="${NUREGO_PASSWORD:nuregoPassword}" />
+        <constructor-arg name="nuregoInstanceId" value="${NUREGO_INSTANCE_ID:nuregoInstanceId}" />
     </bean>
 
     <bean id="meteringRepo"
@@ -39,33 +41,61 @@
         <property name="asyncRequestFactory" ref="asyncRequestFactory" />
     </bean>
 
-    <!-- Begin constructing Apache HttpAsyncClient request factory for REST template. -->
+    <bean id="restTemplate"
+          class="org.springframework.web.client.RestTemplate">
+        <property name="requestFactory" ref="httpRequestFactory"/>
+    </bean>
+
+    <!-- Begin constructing Apache HttpAsyncClient request factory for ASYNC REST template. -->
 
     <bean id="asyncRequestFactory"
         class="org.springframework.http.client.HttpComponentsAsyncClientHttpRequestFactory">
-        <constructor-arg ref="httpClient" />
+        <constructor-arg ref="asyncHttpClient" />
     </bean>
 
-    <bean id="httpClient" factory-bean="systemHttpClientBuilder"
+    <bean id="asyncHttpClient" factory-bean="asyncSystemHttpClientBuilder"
         factory-method="build">
     </bean>
 
-    <bean id="systemHttpClientBuilder" factory-bean="httpClientBuilder"
+    <bean id="asyncSystemHttpClientBuilder" factory-bean="asyncHttpClientBuilder"
         factory-method="useSystemProperties">
-        <property name="connectionManager" ref="connectionManager" />
+        <property name="connectionManager" ref="asyncConnectionManager" />
     </bean>
 
-    <bean id="connectionManager" class="org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager">
+    <bean id="asyncConnectionManager" class="org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager">
         <constructor-arg ref="connectingIoReactor" />
         <property name="maxTotal" value="${httpAsyncClient.maxTotal:64}" />
     </bean>
 
     <bean id="connectingIoReactor" class="org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor" />
 
-    <bean id="httpClientBuilder" class="org.apache.http.impl.nio.client.HttpAsyncClientBuilder"
+    <bean id="asyncHttpClientBuilder" class="org.apache.http.impl.nio.client.HttpAsyncClientBuilder"
         factory-method="create">
     </bean>
 
-    <!-- End constructing Apache HttpAsyncClient request factory for REST template. -->
+    <!-- End constructing Apache HttpAsyncClient request factory for ASYNC REST template. -->
+
+    <!-- Begin constructing Apache HttpClient request factory for REST template. -->
+
+    <bean id="httpRequestFactory"
+          class="org.springframework.http.client.HttpComponentsClientHttpRequestFactory">
+        <constructor-arg ref="httpClient" />
+    </bean>
+
+    <bean id="httpClient" factory-bean="systemHttpClientBuilder" factory-method="build"/>
+
+    <bean id="systemHttpClientBuilder" factory-bean="httpClientBuilder" factory-method="useSystemProperties">
+        <property name="connectionManager" ref="connectionManager" />
+    </bean>
+
+    <bean id="connectionManager" class="org.apache.http.impl.conn.PoolingHttpClientConnectionManager">
+        <property name="maxTotal" value="64" />
+    </bean>
+
+    <bean id="httpClientBuilder" class="org.apache.http.impl.client.HttpClientBuilder"
+          factory-method="create">
+    </bean>
+
+    <!-- End constructing Apache HttpClient request factory for REST template. -->
 
 </beans>

@@ -2,5 +2,8 @@
 .classpath
 .project
 .settings
+.idea/
+*.iml
+*.ipr
 /test-output/
 /bin/
