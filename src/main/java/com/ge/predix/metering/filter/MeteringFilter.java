@@ -47,8 +47,9 @@ public class MeteringFilter extends OncePerRequestFilter {
             final FilterChain filterChain) throws ServletException, IOException {
 
         filterChain.doFilter(request, response);
+        int responseStatus = response.getStatus();
 
-        if ((200 > response.getStatus()) || (400 <= response.getStatus())) {
+        if ((200 > responseStatus) || (400 <= responseStatus)) {
             return;
         }
 
@@ -62,7 +63,7 @@ public class MeteringFilter extends OncePerRequestFilter {
                 continue;
             }
 
-            if (response.getStatus() != meter.getExpectedHttpStatusCode()) {
+            if (responseStatus != meter.getExpectedHttpStatusCode()) {
                 continue;
             }
 
@@ -73,15 +74,15 @@ public class MeteringFilter extends OncePerRequestFilter {
         }
     }
 
-    public void setCustomerResolver(final CustomerResolver customerResolver) {
+    void setCustomerResolver(final CustomerResolver customerResolver) {
         this.customerResolver = customerResolver;
     }
 
-    public void setNuregoClient(final NuregoClient nuregoClient) {
+    void setNuregoClient(final NuregoClient nuregoClient) {
         this.nuregoClient = nuregoClient;
     }
 
-    public void setRepository(final MeteredResourceRepository repository) {
+    void setRepository(final MeteredResourceRepository repository) {
         this.repository = repository;
     }
 

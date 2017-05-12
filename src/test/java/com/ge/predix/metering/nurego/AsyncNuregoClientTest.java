@@ -13,28 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package com.ge.predix.metering.filter;
+package com.ge.predix.metering.nurego;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import java.util.Map;
 
 import org.mockito.Matchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.reflection.Whitebox;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.web.client.AsyncRestTemplate;
+import org.springframework.web.client.RestTemplate;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import com.ge.predix.metering.customer.Customer;
 import com.ge.predix.metering.data.entity.MeteredResource;
-import com.ge.predix.metering.nurego.AsyncNuregoClient;
-import com.ge.predix.metering.nurego.CustomerMeteredResource;
 
 @Test(groups = { "asyncNuregoSingleThreadedTest" })
 public class AsyncNuregoClientTest {
@@ -42,9 +45,16 @@ public class AsyncNuregoClientTest {
     private static final String SUBSCRIPTION_1 = "subscription_1";
     private static final String SUBSCRIPTION_2 = "subscription_2";
     private static final String SUBSCRIPTION_3 = "subscription_3";
+    private static final String NUREGO_USERNAME = "nuregoUsername";
+    private static final String NUREGO_PASSWORD = "nuregoPassword";
+    private static final String NUREGO_INSTANCE_ID = "nuregoInstanceId";
+    private static final int EXPIRY = 5;
 
     @Mock
     private AsyncRestTemplate asyncRestTemplate;
+
+    @Mock
+    private RestTemplate restTemplate;
 
     @SuppressWarnings("unchecked")
     @BeforeClass
@@ -54,13 +64,18 @@ public class AsyncNuregoClientTest {
         MockitoAnnotations.initMocks(this);
         when(this.asyncRestTemplate.postForEntity(Matchers.anyString(), Matchers.any(HttpEntity.class),
                 Matchers.any(Class.class))).thenReturn(value);
+        when(this.restTemplate.postForEntity(Matchers.anyString(), Matchers.any(HttpEntity.class),
+                Matchers.any(Class.class)))
+                        .thenReturn(new ResponseEntity<>(new NuregoTokenResponse("1234", EXPIRY), HttpStatus.OK));
     }
 
     @Test
     public void testExceedMaxMapSize() {
 
-        AsyncNuregoClient nuregoClient = new AsyncNuregoClient("https://mockNuregoUrl.com", "", 3, 3);
+        AsyncNuregoClient nuregoClient = new AsyncNuregoClient("https://mockNuregoUrl.com", 3, 3, NUREGO_USERNAME,
+                NUREGO_PASSWORD, NUREGO_INSTANCE_ID);
         nuregoClient.setAsyncRestTemplate(this.asyncRestTemplate);
+        nuregoClient.setRestTemplate(this.restTemplate);
 
         MeteredResource meter = new MeteredResource("POST", "/users", 201, "5813");
         nuregoClient.updateAmount(new Customer(null, SUBSCRIPTION_1), meter, 1);
@@ -80,8 +95,10 @@ public class AsyncNuregoClientTest {
     @Test
     public void testExceedBatchIntervalSeconds() throws InterruptedException {
 
-        AsyncNuregoClient nuregoClient = new AsyncNuregoClient("https://mockNuregoUrl.com", "", 3, 3);
+        AsyncNuregoClient nuregoClient = new AsyncNuregoClient("https://mockNuregoUrl.com", 3, 3, NUREGO_USERNAME,
+                NUREGO_PASSWORD, NUREGO_INSTANCE_ID);
         nuregoClient.setAsyncRestTemplate(this.asyncRestTemplate);
+        nuregoClient.setRestTemplate(this.restTemplate);
 
         MeteredResource meter = new MeteredResource("POST", "/users", 201, "5813");
         Customer customer = new Customer(null, SUBSCRIPTION_1);
@@ -97,6 +114,27 @@ public class AsyncNuregoClientTest {
         Map<CustomerMeteredResource, Integer> internalState2 = (Map<CustomerMeteredResource, Integer>) Whitebox
                 .getInternalState(nuregoClient, "updateMap");
         Assert.assertEquals(internalState2.size(), 0);
+    }
+
+    @Test
+    public void testGetNuregoToken() throws Exception {
+        setup();
+        AsyncNuregoClient nuregoClient = new AsyncNuregoClient("https://mockNuregoUrl.com", 3, 3, NUREGO_USERNAME,
+                NUREGO_PASSWORD, NUREGO_INSTANCE_ID);
+        nuregoClient.setRestTemplate(this.restTemplate);
+        Assert.assertNotNull(nuregoClient.getNuregoToken());
+        Mockito.verify(this.restTemplate, times(1)).postForEntity(Matchers.anyString(), Matchers.any(HttpEntity.class),
+                Matchers.any(Class.class));
+        // verify we used the cached value
+        Assert.assertNotNull(nuregoClient.getNuregoToken());
+        Mockito.verify(this.restTemplate, times(1)).postForEntity(Matchers.anyString(), Matchers.any(HttpEntity.class),
+                Matchers.any(Class.class));
+        Thread.sleep(EXPIRY * 1000);
+        // verify once the token expires, we get a new token from nurego
+        Assert.assertNotNull(nuregoClient.getNuregoToken());
+        Mockito.verify(this.restTemplate, times(2)).postForEntity(Matchers.anyString(), Matchers.any(HttpEntity.class),
+                Matchers.any(Class.class));
+
     }
 
 }

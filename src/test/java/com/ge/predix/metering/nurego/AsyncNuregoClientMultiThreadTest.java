@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package com.ge.predix.metering.filter;
+package com.ge.predix.metering.nurego;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,8 +26,11 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.web.client.AsyncRestTemplate;
+import org.springframework.web.client.RestTemplate;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -35,7 +38,6 @@ import org.testng.annotations.Test;
 
 import com.ge.predix.metering.customer.Customer;
 import com.ge.predix.metering.data.entity.MeteredResource;
-import com.ge.predix.metering.nurego.AsyncNuregoClient;
 
 @Test(dependsOnGroups = "asyncNuregoSingleThreadedTest")
 public class AsyncNuregoClientMultiThreadTest {
@@ -49,6 +51,10 @@ public class AsyncNuregoClientMultiThreadTest {
     @SuppressWarnings("unchecked")
     @BeforeClass
     public void setup() {
+        RestTemplate restTemplate = Mockito.mock(RestTemplate.class);
+        Mockito.when(restTemplate.postForEntity(Matchers.anyString(), Matchers.any(HttpEntity.class),
+                Matchers.any(Class.class)))
+                .thenReturn(new ResponseEntity<>(new NuregoTokenResponse("1234", 1234), HttpStatus.OK));
         AsyncRestTemplate asyncRestTemplate = Mockito.mock(AsyncRestTemplate.class);
         Mockito.when(asyncRestTemplate.postForEntity(Matchers.anyString(), Matchers.any(HttpEntity.class),
                 Matchers.any(Class.class))).thenAnswer(new Answer<ListenableFuture<?>>() {
@@ -57,8 +63,6 @@ public class AsyncNuregoClientMultiThreadTest {
                         Object[] args = invocation.getArguments();
                         String url = (String) args[0];
                         String subscriptionId = url.split("/")[5];
-                        System.out.println("Thread id: " + Thread.currentThread().getId() + " subscription id: "
-                                + subscriptionId + " from url: " + url);
                         HttpEntity<?> request = (HttpEntity<?>) args[1];
                         Map<String, Object> map = (Map<String, Object>) request.getBody();
                         String featureId = (String) map.get("feature_id");
@@ -68,8 +72,10 @@ public class AsyncNuregoClientMultiThreadTest {
                         return null;
                     }
                 });
-        this.asyncNuregoClient = new AsyncNuregoClient("https://hello", "hello", 3, 3);
+        this.asyncNuregoClient = new AsyncNuregoClient("https://hello", 3, 3, "nuregoUsername", "nuregoPassword",
+                "nuregoInstanceId");
         this.asyncNuregoClient.setAsyncRestTemplate(asyncRestTemplate);
+        this.asyncNuregoClient.setRestTemplate(restTemplate);
     }
 
     @Test(threadPoolSize = 5, invocationCount = 5, dataProvider = "meterDataProvider")

@@ -15,10 +15,11 @@
  *******************************************************************************/
 package com.ge.predix.metering.nurego;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
@@ -32,6 +33,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 
 import com.ge.predix.metering.customer.Customer;
 import com.ge.predix.metering.data.entity.MeteredResource;
@@ -47,26 +49,34 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
 
     private final int batchIntervalSeconds;
     private final int batchMaxMapSize;
+    private Map<String, String> credentials;
+    private LocalDateTime tokenExpiration;
+    private String token;
 
     @Autowired
     private AsyncRestTemplate asyncRestTemplate;
 
+    @Autowired
+    private RestTemplate restTemplate;
+
     private DateTime nextSend;
 
-    public AsyncNuregoClient(final String url, final String apiKey, final int batchIntervalSeconds,
-            final int batchMaxMapSize) {
-        Nurego.apiKey = apiKey;
+    public AsyncNuregoClient(final String url, final int batchIntervalSeconds, final int batchMaxMapSize,
+            final String nuregoUsername, final String nuregoPassword, final String nuregoInstanceId) {
+
+        this.tokenExpiration = LocalDateTime.now().minus(1, ChronoUnit.SECONDS);
+
+        setupAuthentication(nuregoUsername, nuregoPassword, nuregoInstanceId);
+
         if (StringUtils.isNotEmpty(url)) {
             Nurego.setApiBase(url);
         }
         this.batchIntervalSeconds = batchIntervalSeconds;
         this.batchMaxMapSize = batchMaxMapSize;
         this.nextSend = DateTime.now().plusSeconds(this.batchIntervalSeconds);
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(String.format("url: '%s'", url));
-            LOGGER.debug(String.format("batchIntervalSeconds: '%s'", batchIntervalSeconds));
-            LOGGER.debug(String.format("batchMaxMapSize: '%s'", batchMaxMapSize));
-        }
+        LOGGER.debug("url: '{}'", url);
+        LOGGER.debug("batchIntervalSeconds: '{}'", batchIntervalSeconds);
+        LOGGER.debug("batchMaxMapSize: '{}'", batchMaxMapSize);
     }
 
     @Override
@@ -74,12 +84,7 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
         Map<CustomerMeteredResource, Integer> tempMap = new HashMap<>();
         synchronized (this.updateMap) {
             CustomerMeteredResource update = new CustomerMeteredResource(customer, meter);
-            Integer currentAmount = this.updateMap.get(update);
-            if (null == currentAmount) {
-                this.updateMap.put(update, amount);
-            } else {
-                this.updateMap.put(update, currentAmount + amount);
-            }
+            this.updateMap.merge(update, amount, Integer::sum);
 
             if (!isTimeToSend()) {
                 return;
@@ -94,15 +99,15 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
     private void updateMeteringProvider(final Map<CustomerMeteredResource, Integer> meterEntries) {
 
         HttpHeaders headers = new HttpHeaders();
-        headers.add("X-NUREGO-AUTHORIZATION", String.format("Bearer %s", Nurego.apiKey));
+        headers.add("Authorization", String.format("bearer %s", getNuregoToken()));
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        Map<String, Object> usageParams = new HashMap<String, Object>();
+        Map<String, Object> usageParams = new HashMap<>();
         usageParams.put("provider", "cloud-foundry");
 
-        LOGGER.info("start: update metering provider. entryCount = " + meterEntries.size());
+        LOGGER.debug("start: update metering provider. entryCount = {}", meterEntries.size());
 
-        for (Entry<CustomerMeteredResource, Integer> entry : meterEntries.entrySet()) {
+        for (Map.Entry<CustomerMeteredResource, Integer> entry : meterEntries.entrySet()) {
             CustomerMeteredResource customerMeteredResource = entry.getKey();
             Integer entryCurrentAmount = entry.getValue();
             String url = String.format("%s/v1/subscriptions/%s/entitlements/usage", Nurego.getApiBase(),
@@ -111,18 +116,35 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
             usageParams.put("feature_id", customerMeteredResource.getMeteredResource().getFeatureId());
             usageParams.put("amount", entryCurrentAmount);
 
-            HttpEntity<?> request = new HttpEntity<Map<String, Object>>(usageParams, headers);
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(usageParams, headers);
 
             LOGGER.debug("The request in spring metering filter is :" + request.toString());
             try {
                 // Fire and forget.. do not wait to for the results in this thread
                 this.asyncRestTemplate.postForEntity(url, request, String.class);
             } catch (RestClientException ex) {
-                LOGGER.error(String.format("Failed to update usage for featureId '%s'.",
-                        customerMeteredResource.getMeteredResource().getFeatureId()));
+                LOGGER.error("Failed to update usage for featureId '{}'.",
+                        customerMeteredResource.getMeteredResource().getFeatureId());
             }
         }
-        LOGGER.info("end: update metering provider. entryCount = " + meterEntries.size());
+        LOGGER.debug("end: update metering provider. entryCount = {}", meterEntries.size());
+    }
+
+    String getNuregoToken() {
+        if (LocalDateTime.now().isAfter(this.tokenExpiration)) {
+            String tokenUrl = String.format("%s/v1/auth/token", Nurego.getApiBase());
+            NuregoTokenResponse response;
+            try {
+                response = this.restTemplate.postForEntity(tokenUrl, credentials, NuregoTokenResponse.class).getBody();
+            } catch (RestClientException ex) {
+                LOGGER.error("Unable to get token", ex);
+                return "";
+            }
+
+            this.tokenExpiration = LocalDateTime.now().plus(response.getExpiry() - 1, ChronoUnit.SECONDS);
+            this.token = response.getAccessToken();
+        }
+        return this.token;
     }
 
     private boolean isTimeToSend() {
@@ -144,6 +166,10 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
         this.asyncRestTemplate = asyncRestTemplate;
     }
 
+    public void setRestTemplate(final RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+
     public void flushMeterUpdates() {
         Map<CustomerMeteredResource, Integer> tempMap = new HashMap<>();
         synchronized (this.updateMap) {
@@ -156,5 +182,19 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
     @Override
     public void destroy() throws Exception {
         flushMeterUpdates();
+    }
+
+    private void setupAuthentication(final String nuregoUsername, final String nuregoPassword,
+            final String nuregoInstanceId) {
+        if (StringUtils.isNotEmpty(nuregoUsername) && StringUtils.isNotEmpty(nuregoPassword)
+                && StringUtils.isNotEmpty(nuregoInstanceId)) {
+            this.credentials = new HashMap<String, String>() {
+                {
+                    put("username", nuregoUsername);
+                    put("password", nuregoPassword);
+                    put("instance_id", nuregoInstanceId);
+                }
+            };
+        }
     }
 }
