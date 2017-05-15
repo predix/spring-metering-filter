@@ -54,10 +54,10 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
     private String token;
 
     @Autowired
-    private AsyncRestTemplate asyncRestTemplate;
+    private AsyncRestTemplate meteringAsyncRestTemplate;
 
     @Autowired
-    private RestTemplate restTemplate;
+    private RestTemplate meteringRestTemplate;
 
     private DateTime nextSend;
 
@@ -121,7 +121,7 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
             LOGGER.debug("The request in spring metering filter is :" + request.toString());
             try {
                 // Fire and forget.. do not wait to for the results in this thread
-                this.asyncRestTemplate.postForEntity(url, request, String.class);
+                this.meteringAsyncRestTemplate.postForEntity(url, request, String.class);
             } catch (RestClientException ex) {
                 LOGGER.error("Failed to update usage for featureId '{}'.",
                         customerMeteredResource.getMeteredResource().getFeatureId());
@@ -135,7 +135,8 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
             String tokenUrl = String.format("%s/v1/auth/token", Nurego.getApiBase());
             NuregoTokenResponse response;
             try {
-                response = this.restTemplate.postForEntity(tokenUrl, credentials, NuregoTokenResponse.class).getBody();
+                response = this.meteringRestTemplate.postForEntity(tokenUrl, credentials,
+                        NuregoTokenResponse.class).getBody();
             } catch (RestClientException ex) {
                 LOGGER.error("Unable to get token", ex);
                 return "";
@@ -163,11 +164,11 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
     }
 
     public void setAsyncRestTemplate(final AsyncRestTemplate asyncRestTemplate) {
-        this.asyncRestTemplate = asyncRestTemplate;
+        this.meteringAsyncRestTemplate = asyncRestTemplate;
     }
 
     public void setRestTemplate(final RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
+        this.meteringRestTemplate = restTemplate;
     }
 
     public void flushMeterUpdates() {

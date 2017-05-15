@@ -36,40 +36,41 @@
     <bean id="meteringRepo"
         class="com.ge.predix.metering.data.repository.DefaultMeteredResourceRepository" />
 
-    <bean id="asyncRestTemplate"
+    <bean id="meteringAsyncRestTemplate"
         class="org.springframework.web.client.AsyncRestTemplate">
-        <property name="asyncRequestFactory" ref="asyncRequestFactory" />
+        <property name="asyncRequestFactory" ref="meteringAsyncRequestFactory" />
     </bean>
 
-    <bean id="restTemplate"
-          class="org.springframework.web.client.RestTemplate">
-        <property name="requestFactory" ref="httpRequestFactory"/>
+    <bean id="meteringRestTemplate"
+          class="org.springframework.web.client.RestTemplate" 
+          >
+        <property name="requestFactory" ref="meteringHttpRequestFactory"/>
     </bean>
 
     <!-- Begin constructing Apache HttpAsyncClient request factory for ASYNC REST template. -->
 
-    <bean id="asyncRequestFactory"
+    <bean id="meteringAsyncRequestFactory"
         class="org.springframework.http.client.HttpComponentsAsyncClientHttpRequestFactory">
-        <constructor-arg ref="asyncHttpClient" />
+        <constructor-arg ref="meteringAsyncHttpClient" />
     </bean>
 
-    <bean id="asyncHttpClient" factory-bean="asyncSystemHttpClientBuilder"
+    <bean id="meteringAsyncHttpClient" factory-bean="meteringAsyncSystemHttpClientBuilder"
         factory-method="build">
     </bean>
 
-    <bean id="asyncSystemHttpClientBuilder" factory-bean="asyncHttpClientBuilder"
+    <bean id="meteringAsyncSystemHttpClientBuilder" factory-bean="meteringAsyncHttpClientBuilder"
         factory-method="useSystemProperties">
-        <property name="connectionManager" ref="asyncConnectionManager" />
+        <property name="connectionManager" ref="meteringAsyncConnectionManager" />
     </bean>
 
-    <bean id="asyncConnectionManager" class="org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager">
+    <bean id="meteringAsyncConnectionManager" class="org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager">
         <constructor-arg ref="connectingIoReactor" />
         <property name="maxTotal" value="${httpAsyncClient.maxTotal:64}" />
     </bean>
 
     <bean id="connectingIoReactor" class="org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor" />
 
-    <bean id="asyncHttpClientBuilder" class="org.apache.http.impl.nio.client.HttpAsyncClientBuilder"
+    <bean id="meteringAsyncHttpClientBuilder" class="org.apache.http.impl.nio.client.HttpAsyncClientBuilder"
         factory-method="create">
     </bean>
 
@@ -77,22 +78,22 @@
 
     <!-- Begin constructing Apache HttpClient request factory for REST template. -->
 
-    <bean id="httpRequestFactory"
+    <bean id="meteringHttpRequestFactory"
           class="org.springframework.http.client.HttpComponentsClientHttpRequestFactory">
-        <constructor-arg ref="httpClient" />
+        <constructor-arg ref="meteringHttpClient" />
     </bean>
 
-    <bean id="httpClient" factory-bean="systemHttpClientBuilder" factory-method="build"/>
+    <bean id="meteringHttpClient" factory-bean="meteringSystemHttpClientBuilder" factory-method="build"/>
 
-    <bean id="systemHttpClientBuilder" factory-bean="httpClientBuilder" factory-method="useSystemProperties">
-        <property name="connectionManager" ref="connectionManager" />
+    <bean id="meteringSystemHttpClientBuilder" factory-bean="meteringHttpClientBuilder" factory-method="useSystemProperties">
+        <property name="connectionManager" ref="meteringConnectionManager" />
     </bean>
 
-    <bean id="connectionManager" class="org.apache.http.impl.conn.PoolingHttpClientConnectionManager">
+    <bean id="meteringConnectionManager" class="org.apache.http.impl.conn.PoolingHttpClientConnectionManager">
         <property name="maxTotal" value="64" />
     </bean>
 
-    <bean id="httpClientBuilder" class="org.apache.http.impl.client.HttpClientBuilder"
+    <bean id="meteringHttpClientBuilder" class="org.apache.http.impl.client.HttpClientBuilder"
           factory-method="create">
     </bean>
 
