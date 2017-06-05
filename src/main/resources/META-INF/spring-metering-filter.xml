@@ -42,7 +42,7 @@
     </bean>
 
     <bean id="meteringRestTemplate"
-          class="org.springframework.web.client.RestTemplate" 
+          class="org.springframework.web.client.RestTemplate"
           >
         <property name="requestFactory" ref="meteringHttpRequestFactory"/>
     </bean>
@@ -78,7 +78,7 @@
 
     <!-- Begin constructing Apache HttpClient request factory for REST template. -->
 
-    <bean id="meteringHttpRequestFactory"
+    <bean id="meteringHttpRequestFactory" name="meteringHttpRequestFactory, clientHttpRequestFactory"
           class="org.springframework.http.client.HttpComponentsClientHttpRequestFactory">
         <constructor-arg ref="meteringHttpClient" />
     </bean>
