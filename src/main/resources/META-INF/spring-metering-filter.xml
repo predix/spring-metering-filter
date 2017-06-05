@@ -42,14 +42,14 @@
     </bean>
 
     <bean id="meteringRestTemplate"
-          class="org.springframework.web.client.RestTemplate" 
+          class="org.springframework.web.client.RestTemplate"
           >
         <property name="requestFactory" ref="meteringHttpRequestFactory"/>
     </bean>
 
     <!-- Begin constructing Apache HttpAsyncClient request factory for ASYNC REST template. -->
 
-    <bean id="meteringAsyncRequestFactory"
+    <bean id="meteringAsyncRequestFactory" name="meteringAsyncRequestFactory, clientHttpRequestFactory"
         class="org.springframework.http.client.HttpComponentsAsyncClientHttpRequestFactory">
         <constructor-arg ref="meteringAsyncHttpClient" />
     </bean>
