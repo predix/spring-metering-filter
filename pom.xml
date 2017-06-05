@@ -20,7 +20,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.ge.predix</groupId>
     <artifactId>spring-metering-filter</artifactId>
-    <version>1.2.4</version>
+    <version>1.2.5-SNAPSHOT</version>
     <name>Predix Spring Metering Filter</name>
     <description>This library provides a spring filter that meters RESTful requests and persists usage data using the Nurego API.</description>
     <packaging>jar</packaging>
