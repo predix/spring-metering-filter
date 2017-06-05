@@ -49,7 +49,7 @@
 
     <!-- Begin constructing Apache HttpAsyncClient request factory for ASYNC REST template. -->
 
-    <bean id="meteringAsyncRequestFactory" name="meteringAsyncRequestFactory, clientHttpRequestFactory"
+    <bean id="meteringAsyncRequestFactory"
         class="org.springframework.http.client.HttpComponentsAsyncClientHttpRequestFactory">
         <constructor-arg ref="meteringAsyncHttpClient" />
     </bean>
@@ -78,7 +78,7 @@
 
     <!-- Begin constructing Apache HttpClient request factory for REST template. -->
 
-    <bean id="meteringHttpRequestFactory"
+    <bean id="meteringHttpRequestFactory" name="meteringHttpRequestFactory, clientHttpRequestFactory"
           class="org.springframework.http.client.HttpComponentsClientHttpRequestFactory">
         <constructor-arg ref="meteringHttpClient" />
     </bean>
