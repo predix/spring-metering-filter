@@ -13,10 +13,17 @@ mvn clean package
 ## Run Integration Tests
 
 * To execute the integration tests, you need to export valid values for the following:
+
   * NUREGO_API_TEST_URL
   * NUREGO_TEST_USERNAME
   * NUREGO_TEST_PASSWORD
   * NUREGO_TEST_INSTANCE_ID
+
+	* NUREGO_API_TEST_URL
+	* NUREGO_TEST_USERNAME
+	* NUREGO_TEST_PASSWORD
+	* NUREGO_TEST_INSTANCE_ID
+Updated instructions on how to run integration tests.
 * If you are behind a network proxy, you will also need to configure:
   * HTTPS_PROXY_HOST
   * HTTPS_PROXY_PORT
