@@ -50,6 +50,7 @@ pipeline {
                 }
             }
         }
+<<<<<<< HEAD
         stage('Publish Artifacts') {
             when {
                 expression { env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'develop' }
@@ -93,6 +94,19 @@ pipeline {
                 // Test reports
                 junit '**/surefire-reports/junitreports/TEST*.xml'
                 step([$class: 'JacocoPublisher', maximumBranchCoverage: '90', maximumInstructionCoverage: '90'])
+=======
+        stage('Maven push if develop') {
+            when {
+                branch 'develop'
+            }
+            environment {
+                DEPLOY_CREDS = credentials('predix-artifactory-uploader')
+            }
+            steps {
+                sh '''#!/bin/bash -ex
+                    mvn  -B -s spring-filters-config/mvn_settings_noproxy.xml -DaltDeploymentRepository=artifactory.releases::default::https://devcloud.swcoe.ge.com/artifactory/MAAXA-MVN-SNAPSHOT  -Dartifactory.password=${DEPLOY_CREDS_PSW} clean deploy
+                '''
+>>>>>>> requested changes
             }
         }
         stage('Maven push if master') {
