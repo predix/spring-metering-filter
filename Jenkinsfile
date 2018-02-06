@@ -2,6 +2,12 @@
 def Snapshot = 'PROPEL'
 library "security-ci-commons-shared-lib"
 def NODE = nodeDetails("java")
+// Define DevCloud Artifactory for publishing non-docker image artifacts
+def artUploadServer = Artifactory.server('devcloud')
+
+// Change Snapshot to your own DevCloud Artifactory repo name
+def Snapshot = 'PROPEL'
+
 
 pipeline {
     options {
@@ -15,6 +21,13 @@ pipeline {
     }
     stages {
         stage('Test and Deploy Extensions') {
+            image 'maven:3.5'
+            label 'dind'
+            args '-v /root/.m2:/root/.m2'
+        }
+    }
+    stages {
+        stage('Test and deploy extensions') {
             steps {
                 checkout scm
                 dir('spring-filters-config') {
@@ -77,6 +90,23 @@ pipeline {
                         '''
                     }
                 }
+                // Test reports
+                junit '**/surefire-reports/junitreports/TEST*.xml'
+                step([$class: 'JacocoPublisher', maximumBranchCoverage: '90', maximumInstructionCoverage: '90'])
+            }
+        }
+        stage('Maven push if master') {
+            when {
+                branch 'master'
+            }
+            environment {
+                DEPLOY_CREDS = credentials('predix-artifactory-uploader')
+            }
+            steps {
+                sh '''#!/bin/bash -ex
+                    mvn  -B -s spring-filters-config/mvn_settings_noproxy.xml -DaltDeploymentRepository=artifactory.releases::default::https://devcloud.swcoe.ge.com/artifactory/MAAXA-MVN  -Dartifactory.password=${DEPLOY_CREDS_PSW} clean deploy
+                    mvn -B deploy -P release -s spring-filters-config/mvn_settings_noproxy.xml -D stagingProfileId=14c243d3be5b9e
+                '''
             }
         }
     }
