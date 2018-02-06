@@ -30,9 +30,26 @@ pipeline {
 
                     mvn clean verify -s spring-filters-config/mvn_settings_noproxy.xml
                 '''
-                // Test reports
-                junit '**/surefire-reports/junitreports/TEST*.xml'
-                step([$class: 'JacocoPublisher', maximumBranchCoverage: '90', maximumInstructionCoverage: '90'])
+            }
+            post {
+                always {
+                    // Test reports
+                    junit '**/surefire-reports/junitreports/TEST*.xml'
+                    step([$class: 'JacocoPublisher', maximumBranchCoverage: '90', maximumInstructionCoverage: '90'])
+                }
+            }
+        }
+        stage('Maven push if develop') {
+            when {
+                branch 'develop'
+            }
+            environment {
+                DEPLOY_CREDS = credentials('predix-artifactory-uploader')
+            }
+            steps {
+                sh '''#!/bin/bash -ex
+                    mvn  -B -s spring-filters-config/mvn_settings_noproxy.xml -DaltDeploymentRepository=artifactory.releases::default::https://devcloud.swcoe.ge.com/artifactory/MAAXA-MVN-SNAPSHOT  -Dartifactory.password=${DEPLOY_CREDS_PSW} clean deploy
+                '''
             }
         }
         stage('Maven push if master') {
