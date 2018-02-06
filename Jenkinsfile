@@ -100,7 +100,7 @@ pipeline {
                 branch 'develop'
             }
             environment {
-                DEPLOY_CREDS = credentials('predix-artifactory-uploader')
+                DEPLOY_CREDS = credentials('uaa-predix-artifactory-upload-credentials')
             }
             steps {
                 sh '''#!/bin/bash -ex
@@ -114,7 +114,7 @@ pipeline {
                 branch 'master'
             }
             environment {
-                DEPLOY_CREDS = credentials('predix-artifactory-uploader')
+                DEPLOY_CREDS = credentials('uaa-predix-artifactory-upload-credentials')
             }
             steps {
                 sh '''#!/bin/bash -ex
