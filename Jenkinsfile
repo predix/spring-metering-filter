@@ -1,3 +1,4 @@
+
 // Change Snapshot to your own DevCloud Artifactory repo name
 def Snapshot = 'PROPEL'
 library "security-ci-commons-shared-lib"
@@ -22,12 +23,12 @@ pipeline {
     stages {
         stage('Test and Deploy Extensions') {
             image 'maven:3.5'
+            image 'repo.ci.build.ge.com:8443/predixci-jdk-1.8-base'
             label 'dind'
-            args '-v /root/.m2:/root/.m2'
         }
     }
     stages {
-        stage('Test and deploy extensions') {
+        stage('Test and Deploy Extensions') {
             steps {
                 checkout scm
                 dir('spring-filters-config') {
@@ -50,7 +51,7 @@ pipeline {
                 }
             }
         }
-<<<<<<< HEAD
+
         stage('Publish Artifacts') {
             when {
                 expression { env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'develop' }
@@ -94,7 +95,7 @@ pipeline {
                 // Test reports
                 junit '**/surefire-reports/junitreports/TEST*.xml'
                 step([$class: 'JacocoPublisher', maximumBranchCoverage: '90', maximumInstructionCoverage: '90'])
-=======
+
         stage('Maven push if develop') {
             when {
                 branch 'develop'
@@ -106,21 +107,52 @@ pipeline {
                 sh '''#!/bin/bash -ex
                     mvn  -B -s spring-filters-config/mvn_settings_noproxy.xml -DaltDeploymentRepository=artifactory.releases::default::https://devcloud.swcoe.ge.com/artifactory/MAAXA-MVN-SNAPSHOT  -Dartifactory.password=${DEPLOY_CREDS_PSW} clean deploy
                 '''
->>>>>>> requested changes
+
             }
         }
         stage('Maven push if master') {
+
+        stage('Publish Artifacts') {
+
             when {
-                branch 'master'
+                expression { env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'develop' }
             }
             environment {
                 DEPLOY_CREDS = credentials('uaa-predix-artifactory-upload-credentials')
+                MAVEN_CENTRAL_STAGING_PROFILE_ID=credentials('MAVEN_CENTRAL_STAGING_PROFILE_ID')
             }
             steps {
-                sh '''#!/bin/bash -ex
-                    mvn  -B -s spring-filters-config/mvn_settings_noproxy.xml -DaltDeploymentRepository=artifactory.releases::default::https://devcloud.swcoe.ge.com/artifactory/MAAXA-MVN  -Dartifactory.password=${DEPLOY_CREDS_PSW} clean deploy
-                    mvn -B deploy -P release -s spring-filters-config/mvn_settings_noproxy.xml -D stagingProfileId=14c243d3be5b9e
-                '''
+                script {
+                    if (env.BRANCH_NAME == 'master') {
+                    echo 'Branch is master push to MAAXA-MVN and maven central'
+                        sh '''#!/bin/bash -ex
+                            apk update
+                            apk add --no-cache gnupg
+                            gpg --version
+                            ln -s ${WORKSPACE} /working-dir
+
+                            mvn clean deploy -B -s spring-filters-config/mvn_settings_noproxy.xml \\
+                            -DaltDeploymentRepository=artifactory.releases::default::https://devcloud.swcoe.ge.com/artifactory/MAAXA-MVN \\
+                            -Dartifactory.password=${DEPLOY_CREDS_PSW} \\
+                            -D skipTests -e
+
+                            #Deploy/Release to maven central repository
+                            mvn clean deploy -B -P release -s spring-filters-config/mvn_settings_noproxy.xml \\
+                            -D gpg.homedir=/working-dir/spring-filters-config/gnupg \\
+                            -D stagingProfileId=$MAVEN_CENTRAL_STAGING_PROFILE_ID \\
+                            -D skipTests -e
+                        '''
+                    }
+                    else {
+                        echo 'Branch is develop push to MAAXA-MVN-SNAPSHOT'
+                        sh '''#!/bin/bash -ex
+                            mvn clean deploy -B -s spring-filters-config/mvn_settings_noproxy.xml \\
+                            -DaltDeploymentRepository=artifactory.releases::default::https://devcloud.swcoe.ge.com/artifactory/MAAXA-MVN-SNAPSHOT \\
+                            -Dartifactory.password=${DEPLOY_CREDS_PSW} \\
+                            -D skipTests -e
+                        '''
+                    }
+                }
             }
         }
     }
