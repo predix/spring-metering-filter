@@ -16,6 +16,9 @@
 
 package com.ge.predix.metering.filter;
 
+import java.io.IOException;
+import java.net.URI;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,16 +27,22 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ge.predix.integration.cloudfoundry.CFClientTest;
 import com.nurego.Nurego;
 import com.nurego.exception.InvalidRequestException;
 import com.nurego.model.Entitlement;
@@ -56,13 +65,30 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 
     @Value("${NUREGO_INSTANCE_ID}")
     private String nuregoInstanceId;
+    
+    @Value("${NUREGO_OAUTH_URL}")
+    private String nuregoOauthURL;
 
     @Autowired
     private MeteringFilter meteringFilter;
+    
+    @Autowired
+    private CFClientTest cfClientTests;
+    
+    @Autowired
+	@Qualifier("nuregoTemplate")
+	OAuth2RestTemplate nuregoTemplate;
 
     @Test(dataProvider = "requestProvider")
     public void testNuregoIntegration(final String featureId, final String planId, final String subscriptionId,
             final ServletRequest request, final ServletResponse response) throws Exception {
+    	
+    	//cFClientTest.testCreateDCSInstance();
+    	
+    	System.out.println("Created service Instance ******************************");
+    	
+    	//getNuregoAuthToken();
+    	
 
         Nurego.setApiCredentials(nuregoUsername, nuregoPassword, nuregoInstanceId);
         Subscription subscription;
@@ -90,6 +116,25 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
         Double afterUsedAmount = getEntitlementUsageByFeatureId(featureId, subscriptionId);
         Assert.assertEquals(afterUsedAmount - beforeUsedAmount, 2.0);
     }
+    
+//    private String getNuregoAuthToken() throws Exception{
+//    	
+//    	HashMap<String, Object> serviceRequest = new HashMap<String, Object>();
+//		serviceRequest.put("username", this.nuregoUsername);
+//		serviceRequest.put("password", this.nuregoPassword);
+//		serviceRequest.put("instance_id", this.nuregoInstanceId);
+//
+//		URI oauthURL = URI.create(this.nuregoOauthURL);
+//		String response = this.nuregoTemplate.postForObject(oauthURL, serviceRequest, String.class);
+//
+//		@SuppressWarnings("unchecked")
+//		Map<String, Object> responseMap = new ObjectMapper().readValue(response, Map.class);
+//		
+//		System.out.println("ResponseMap:"+responseMap.values());
+//
+//		return null;
+//    }
+//    
 
     private Double getEntitlementUsageByFeatureId(final String featureId, final String subscriptionId)
             throws Exception {

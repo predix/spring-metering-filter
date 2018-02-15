@@ -196,11 +196,11 @@
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>2.19</version>
                 <configuration>
-                    <systemPropertyVariables>
+                    <!--  <systemPropertyVariables>
                         <https.proxyHost>${HTTPS_PROXY_HOST}</https.proxyHost>
                         <https.proxyPort>${HTTPS_PROXY_PORT}</https.proxyPort>
                         <http.nonProxyHosts>${NON_PROXY_HOSTS}</http.nonProxyHosts>
-                    </systemPropertyVariables>
+                    </systemPropertyVariables>-->
                     <includes>
                         <include>**/NuregoIT.java</include>
                     </includes>
