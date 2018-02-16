@@ -38,8 +38,6 @@ public class CFClientTest extends AbstractTestNGSpringContextTests {
 	@Value("${CLOUD_CONTROLLER_URI}")
 	private String cfControllerURL;
 	
-	private final Map<String, String> headers = new HashMap<String, String>();;
-
 	@Value("${CF_USERNAME}")
 	private String cfUser;
 
@@ -52,14 +50,15 @@ public class CFClientTest extends AbstractTestNGSpringContextTests {
 	@Value("${CF_SPACE}")
 	private String cfSpace;
 	
-	
+	private final Map<String, String> headers = new HashMap<String, String>();
+		
 	@BeforeClass
 	private void setup() {
 		this.headers.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
 		this.headers.put(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
 	}
 	
-	public void testCreateDCSInstance() throws Exception {
+	public String testCreateServiceInstance() throws Exception {
 
 		String serviceInstanceName = "dcs-metering-test";
 		String trustedIssuerId = "https://uaadummyurl.com/oauth/token";
@@ -67,12 +66,12 @@ public class CFClientTest extends AbstractTestNGSpringContextTests {
 		String serviceInstanceGuid = createNewServiceInstance(serviceInstanceName, trustedIssuerId);
 		try {
 			verifyServiceInstanceCreated(serviceInstanceGuid);
-
+			
+			System.out.println("Inside testCreateServiceInstance ********");			
 		} catch (Exception e) {
 			Assert.fail(e.toString());
-		} finally {
-			deleteServiceInstance(serviceInstanceGuid);
-		}
+		} 
+		return serviceInstanceGuid;
 	}
 	
 	private String createNewServiceInstance(final String serviceInstanceName, final String trustedIssuerId)
@@ -102,7 +101,7 @@ public class CFClientTest extends AbstractTestNGSpringContextTests {
 		Assert.assertEquals(response.getStatusCode(), HttpStatus.OK);
 	}
 	
-	private void deleteServiceInstance(final String serviceInstanceGuid) {
+	public void deleteServiceInstance(final String serviceInstanceGuid) {
 		URI createInstanceURI = URI.create(this.cfControllerURL + "/v2/service_instances/" + serviceInstanceGuid);
 		this.cfRestTemplate.delete(createInstanceURI);
 	}

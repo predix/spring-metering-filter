@@ -12,4 +12,16 @@ public class Constants {
 	public static final String METADATA = "metadata";
 	public static final String SERVICE_INSTANCE_NAME = "dcs-metering-test";
 	public static final String UAA_OAUTH_URL = "https://uaadummyurl.com/oauth/token";
+	public static final String USERNAME = "username";
+	public static final String PASSWORD = "password";
+	public static final String INSTANCE_ID = "instance_id";
+	public static final String ACCESS_TOKEN = "access_token";
+	public static final String BEARER = "bearer ";
+	public static final String SERVICE_COMPONENT_URL = "/v1/service_components/";
+	public static final String PROVIDER = "provider";
+	public static final String CLOUD_FOUNDRY = "cloud-foundry";
+	public static final String ID = "id";
+	
+	
+	
 }
