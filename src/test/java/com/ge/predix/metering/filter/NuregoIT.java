@@ -27,14 +27,19 @@ import javax.servlet.ServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.AfterTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -43,6 +48,13 @@ import com.ge.predix.integration.cloudfoundry.CFClientTest;
 import com.ge.predix.metering.util.Constants;
 import com.nurego.model.Entitlement;
 import com.nurego.model.Subscription;
+
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.client.filter.LoggingFilter;
+
+import com.google.common.base.Splitter;
 
 @ContextConfiguration("classpath:integration-test-spring-context.xml")
 public class NuregoIT extends AbstractTestNGSpringContextTests {
@@ -74,6 +86,8 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
     @Autowired
     private CFClientTest cfClientTest;
     
+    private String serviceInstanceGuid;
+    
     @Autowired
 	@Qualifier("nuregoTemplate")
 	RestTemplate nuregoTemplate;
@@ -82,7 +96,7 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
     public void testNuregoIntegration(final String featureId, final String planId, final String subscriptionId,
             final ServletRequest request, final ServletResponse response) throws Exception {
     	
-    	String serviceInstanceGuid = cfClientTest.testCreateServiceInstance();
+   	serviceInstanceGuid = cfClientTest.testCreateServiceInstance();
     	
     	System.out.println("Created service Instance ::"+serviceInstanceGuid);
     	
@@ -90,9 +104,10 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
     	
     	System.out.println("accessToken::"+accessToken);
     	
-    	//String componentId = retrieveComponent(serviceInstanceGuid, accessToken);
+    	Thread.sleep(10000); //we need to sleep because the component ID takes time to update w/ instance creation
+    	String componentId = retrieveComponent(serviceInstanceGuid, accessToken);
     	
-    	//System.out.println("componentId::"+componentId);
+    	System.out.println("componentId::"+componentId);
     	      
 
        // Nurego.setApiCredentials(nuregoUsername, nuregoPassword, nuregoInstanceId);
@@ -121,9 +136,15 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
         Double afterUsedAmount = getEntitlementUsageByFeatureId(featureId, subscriptionId);
         Assert.assertEquals(afterUsedAmount - beforeUsedAmount, 2.0); */
         
-        cfClientTest.deleteServiceInstance(serviceInstanceGuid);
+        //cfClientTest.deleteServiceInstance(serviceInstanceGuid);
     }
     
+    @AfterTest
+    private void cleanup() {
+        cfClientTest.deleteServiceInstance(serviceInstanceGuid);
+        System.out.println("Successfully deleted " + serviceInstanceGuid);
+ 
+    }
     private String getNuregoAuthToken() throws Exception{
     	
     	HashMap<String, Object> serviceRequest = new HashMap<String, Object>();
@@ -140,23 +161,34 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
     }
     
 	private String retrieveComponent(String serviceInstanceGuid, String accessToken) throws Exception{
-	    	
-    	HashMap<String, Object> serviceRequest = new HashMap<String, Object>();
-		serviceRequest.put(Constants.PROVIDER, Constants.CLOUD_FOUNDRY);
+
+		String retrieveComponentURL = this.nuregoURL + Constants.SERVICE_COMPONENT_URL+serviceInstanceGuid;
 		
-		Map<String, String> headers = new HashMap<String, String>();
-		headers.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-		headers.put(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
-		headers.put(HttpHeaders.AUTHORIZATION, Constants.BEARER+accessToken);
+		HttpHeaders headers = new HttpHeaders();
+		headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+		headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
+		headers.add(HttpHeaders.AUTHORIZATION, Constants.BEARER +accessToken);
+		
+		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(retrieveComponentURL)
+				.queryParam("provider", "cloud-foundry");
+		
+		HttpEntity<?> entity = new HttpEntity<>(headers);
+	    ResponseEntity<String> responseEntity = this.nuregoTemplate.exchange(builder.build().encode().toUri(), HttpMethod.GET, entity ,String.class);  
+	    	return getComp(responseEntity);
 
-		URI retrieveComponentURL = URI.create(this.nuregoURL + Constants.SERVICE_COMPONENT_URL+serviceInstanceGuid);
-		String response = this.nuregoTemplate.postForObject(retrieveComponentURL, serviceRequest, String.class);
+	}
+	
+	private String getComp(ResponseEntity<String> responseEntity) {
+		String response = responseEntity.getBody();
+		response = response.substring(response.indexOf("id"), response.indexOf(",\"name"));
+		response = response.replace("\"", "");
+		response = response.substring(response.indexOf(":")+1);
+		return response;
+	}
 
-		@SuppressWarnings("unchecked")
-		Map<String, Object> responseMap = new ObjectMapper().readValue(response, Map.class);
-		return responseMap.get(Constants.ID).toString();
-	  }
-    
+	private Map<String, String> splitToMap(String in) {
+        return Splitter.on(",").withKeyValueSeparator(":").split(in);
+    }
 
     private Double getEntitlementUsageByFeatureId(final String featureId, final String subscriptionId)
             throws Exception {
