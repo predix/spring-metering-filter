@@ -21,6 +21,8 @@ public class Constants {
 	public static final String PROVIDER = "provider";
 	public static final String CLOUD_FOUNDRY = "cloud-foundry";
 	public static final String ID = "id";
+	public static final String NUREGO_USAGE_URL = "https://api-stg-metering.nurego.com/v1/usages/raw/csv";
+	public static final String SERVICE_ID = "predix-acs";
 	
 	
 	
