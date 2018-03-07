@@ -100,7 +100,7 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
     @Autowired
     private CFClientTest cfClientTest;
     
-    private String serviceInstanceGuid;
+    private String serviceInstanceGuid="ccae21e4-2ee5-4997-8560-ee11d8a1938b";
     
     @Autowired
 	@Qualifier("nuregoTemplate")
@@ -111,28 +111,25 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
             final ServletRequest request, final ServletResponse response) throws Exception {
 
    		
-    		serviceInstanceGuid = cfClientTest.testCreateServiceInstance();
+    		//serviceInstanceGuid = cfClientTest.testCreateServiceInstance();
 	    	
 	    	System.out.println("Created service Instance ::"+serviceInstanceGuid);
 	    	
-	    	String accessToken = getNuregoAuthToken();
-	    	
-	    	System.out.println("accessToken::"+accessToken);
-	    	
+	    	String accessToken = getNuregoAuthToken();   	
+	    	System.out.println("accessToken::"+accessToken);	
 	    	Thread.sleep(10000); //we need to sleep because the component ID takes time to update w/ instance creation
 	    	String componentId = retrieveComponent(serviceInstanceGuid, accessToken);
-	    	
-	    	System.out.println("componentId::"+componentId);
+	   	System.out.println("componentId::"+componentId);
 	    	    
 	
 	    this.meteringFilter.doFilter(request, response, new MockFilterChain());
 	    Thread.sleep(4000);
 	    this.meteringFilter.doFilter(request, response, new MockFilterChain());
 	    Thread.sleep(4000);
-	
+
 	    ResponseEntity<String> responseEntity = retrieveRawUsage(accessToken, componentId);
 	
-	        
+	         
 	
 //	        Double afterUsedAmount = getEntitlementUsageByFeatureId(featureId, subscriptionId);
 //	        Assert.assertEquals(afterUsedAmount - beforeUsedAmount, 2.0); 
@@ -140,12 +137,12 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 //cfClientTest.deleteServiceInstance(serviceInstanceGuid);
     }
     
-    @AfterTest
-    private void cleanup() {
-        cfClientTest.deleteServiceInstance(serviceInstanceGuid);
-        System.out.println("Successfully deleted " + serviceInstanceGuid);
- 
-    }
+//    @AfterTest
+//    private void cleanup() {
+//        cfClientTest.deleteServiceInstance(serviceInstanceGuid);
+//        System.out.println("Successfully deleted " + serviceInstanceGuid);
+// 
+//    }
     private String getNuregoAuthToken() throws Exception{
     	
     		HashMap<String, Object> serviceRequest = new HashMap<String, Object>();
@@ -196,7 +193,6 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 	}
 	private ResponseEntity retrieveRawUsage(String accessToken, String cmp_id) throws JsonParseException, JsonMappingException, IOException {
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-		//String retrieveRawUsage = Constants.NUREGO_USAGE_URL + "?start_date="+dateFormat.format(today())+"&end_date="+dateFormat.format(tomorrow())+"&organization_id="+ORGANIZATION_ID+"&service_id=predix-acs";
 		String retrieveRawUsage = Constants.NUREGO_USAGE_URL;
 		HttpHeaders headers = new HttpHeaders();
 		headers.add(HttpHeaders.ACCEPT, MediaType.ALL_VALUE);
