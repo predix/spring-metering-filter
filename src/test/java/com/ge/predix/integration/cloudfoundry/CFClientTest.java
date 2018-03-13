@@ -1,5 +1,6 @@
 package com.ge.predix.integration.cloudfoundry;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -13,6 +14,9 @@ import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.testng.annotations.Test;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.ResponseEntity;
 import org.testng.Assert;
@@ -94,6 +98,23 @@ public class CFClientTest extends AbstractTestNGSpringContextTests {
 		Map<String, Object> metadataMap = (Map<String, Object>) responseMap.get("metadata");
 		return (String) metadataMap.get("guid");
 	}
+	
+    public String setUAAInstance(String secret, String serviceInstanceName) throws JsonParseException, JsonMappingException, IOException {
+		HashMap<String, Object> serviceRequest = new HashMap<String, Object>();
+		serviceRequest.put("space_guid", this.cfSpaceGuid);
+		serviceRequest.put("name", serviceInstanceName);
+		serviceRequest.put("service_plan_guid", this.servicePlanGuid);
+		serviceRequest.put("adminClientSecret", secret);
+		URI createInstanceURI = URI.create(this.cfControllerURL + "/v2/service_instances");
+		String response = this.cfRestTemplate.postForObject(createInstanceURI, serviceRequest, String.class);
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> responseMap = new ObjectMapper().readValue(response, Map.class);
+		@SuppressWarnings("unchecked")
+		Map<String, Object> metadataMap = (Map<String, Object>) responseMap.get("entity");
+		return (String) metadataMap.get("dashboard_url");
+    	
+    }
 
 	private void verifyServiceInstanceCreated(final String serviceInstanceGuid) {
 		URI getServiceInstance = URI.create(this.cfControllerURL + "/v2/service_instances/" + serviceInstanceGuid);

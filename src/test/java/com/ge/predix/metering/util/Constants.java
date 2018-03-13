@@ -23,7 +23,8 @@ public class Constants {
 	public static final String ID = "id";
 	public static final String NUREGO_USAGE_URL = "https://api-stg-metering.nurego.com/v1/usages/raw/csv";
 	public static final String SERVICE_ID = "predix-acs";
-	
+    public static final String ORGANIZATION_ID = "7141ddb7-cb65-418f-8b38-fe280600ee6d";
+
 	
 	
 }

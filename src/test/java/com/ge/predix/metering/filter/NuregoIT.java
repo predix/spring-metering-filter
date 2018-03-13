@@ -22,6 +22,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
@@ -48,6 +49,8 @@ import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeTest;
 import org.testng.Assert;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.DataProvider;
@@ -56,7 +59,11 @@ import org.testng.annotations.Test;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.ge.predix.integration.cloudfoundry.CFClientTest;
 import com.ge.predix.metering.util.Constants;
 import com.nurego.model.Entitlement;
@@ -75,10 +82,8 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 
     private static final String ACS_PLAN_ID = "pla_b70d-6248-4a0b-8018-9fc6b9de29e6";
     private static final String ACS_SUBSCRIPTION_ID = "sub_e854-2e8a-4f14-9d20-e45848e3c3ce";
-    private static final String ORGANIZATION_ID = "7141ddb7-cb65-418f-8b38-fe280600ee6d";
-    private static final String UAA_PLAN_ID = "pla_8f0b-d679-463c-b3d6-977c10414aba";
     private static final String UAA_SUBSCRIPTION_ID = "sub_d5a8-ff81-4722-9251-836b5508ed54";
-
+    private static final String UAA_PLAN_ID = "pla_8f0b-d679-463c-b3d6-977c10414aba";
     @Value("${NUREGO_USERNAME}")
     private String nuregoUsername;
 
@@ -100,49 +105,101 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
     @Autowired
     private CFClientTest cfClientTest;
     
-    private String serviceInstanceGuid="ccae21e4-2ee5-4997-8560-ee11d8a1938b";
+    private String serviceInstanceGuid;
     
     @Autowired
 	@Qualifier("nuregoTemplate")
 	RestTemplate nuregoTemplate;
     
-    @Test(dataProvider = "requestProvider")
-    public void testNuregoIntegration(final String featureId, final String planId, final String subscriptionId,
-            final ServletRequest request, final ServletResponse response) throws Exception {
+    private class ComponentUsage{
+    		private int componentCount;
+    		private double amountUsed;
+    		
+    		public ComponentUsage(int componentCount, double amountUsed) {
+    			this.componentCount = componentCount;
+    			this.amountUsed = amountUsed;
+    		}
+    		
+    		public int getCompCount() {
+    			return componentCount;
+    		}
+    		
+    		public double getUsage() {
+    			return amountUsed;
+    		}
+    
+    }
+    
 
-   		
-    		//serviceInstanceGuid = cfClientTest.testCreateServiceInstance();
-	    	
+    
+    @Test(dataProvider = "requestProviderForOkResponse")
+    public void testNuregoIntegrationForOkResponse(final String featureId, final String planId, final String subscriptionId,
+            final  MockHttpServletRequest request, final ServletResponse response) throws Exception {
+    	
+    		String uaaUrl = cfClientTest.setUAAInstance("secret", "pooja-uaa-2");
+    	try {
+    		System.out.println("uaa URL  = " + uaaUrl);
+    		serviceInstanceGuid = cfClientTest.testCreateServiceInstance();
+
+    		
 	    	System.out.println("Created service Instance ::"+serviceInstanceGuid);
 	    	
 	    	String accessToken = getNuregoAuthToken();   	
 	    	System.out.println("accessToken::"+accessToken);	
-	    	Thread.sleep(10000); //we need to sleep because the component ID takes time to update w/ instance creation
-	    	String componentId = retrieveComponent(serviceInstanceGuid, accessToken);
+	    	String componentId= retrieveComponent(serviceInstanceGuid, accessToken);
+
 	   	System.out.println("componentId::"+componentId);
-	    	    
-	
+	    	
+	   	request.addHeader("Predix-Zone-Id", serviceInstanceGuid);
 	    this.meteringFilter.doFilter(request, response, new MockFilterChain());
 	    Thread.sleep(4000);
 	    this.meteringFilter.doFilter(request, response, new MockFilterChain());
 	    Thread.sleep(4000);
 
-	    ResponseEntity<String> responseEntity = retrieveRawUsage(accessToken, componentId);
-	
-	         
-	
-//	        Double afterUsedAmount = getEntitlementUsageByFeatureId(featureId, subscriptionId);
-//	        Assert.assertEquals(afterUsedAmount - beforeUsedAmount, 2.0); 
-//	        
-//cfClientTest.deleteServiceInstance(serviceInstanceGuid);
+	    ComponentUsage usages = retrieveRawUsage(accessToken, componentId);
+	    Assert.assertEquals(usages.getCompCount(), 2);
+	    Assert.assertEquals(usages.getUsage(), 2.0);
+	    
+    	} finally {
+    		cleanup();
+    	}
+	    
     }
     
-//    @AfterTest
-//    private void cleanup() {
-//        cfClientTest.deleteServiceInstance(serviceInstanceGuid);
-//        System.out.println("Successfully deleted " + serviceInstanceGuid);
-// 
+//    @Test(dataProvider = "requestProviderForCreatedResponse")
+//    public void testNuregoIntegrationForCreatedResponse(final String featureId, final String planId, final String subscriptionId,
+//            final  MockHttpServletRequest request, final ServletResponse response) throws Exception {
+//    		try {
+//			serviceInstanceGuid = cfClientTest.testCreateServiceInstance();
+//	
+//		    	System.out.println("Created service Instance ::"+serviceInstanceGuid);
+//		    	
+//		    	String accessToken = getNuregoAuthToken();   	
+//		    	System.out.println("accessToken::"+accessToken);	
+//		    	String componentId= retrieveComponent(serviceInstanceGuid, accessToken);
+//	
+//		   	System.out.println("componentId::"+componentId);
+//		    	
+//		   	request.addHeader("Predix-Zone-Id", serviceInstanceGuid);
+//		    this.meteringFilter.doFilter(request, response, new MockFilterChain());
+//		    Thread.sleep(4000);
+//		    this.meteringFilter.doFilter(request, response, new MockFilterChain());
+//		    Thread.sleep(4000);
+//	
+//		    ComponentUsage usages = retrieveRawUsage(accessToken, componentId);
+//		    Assert.assertEquals(usages.getCompCount(), 0);
+//		    Assert.assertEquals(usages.getUsage(), 0.0);
+//    		} finally {
+//    			cleanup();
+//    		}
+//	    
 //    }
+    
+    private void cleanup() {
+        cfClientTest.deleteServiceInstance(serviceInstanceGuid);
+        System.out.println("Successfully deleted " + serviceInstanceGuid);
+ 
+    }
     private String getNuregoAuthToken() throws Exception{
     	
     		HashMap<String, Object> serviceRequest = new HashMap<String, Object>();
@@ -171,7 +228,17 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 				.queryParam("provider", "cloud-foundry");
 		
 		HttpEntity<?> entity = new HttpEntity<>(headers);
-	    ResponseEntity<String> responseEntity = this.nuregoTemplate.exchange(builder.build().encode().toUri(), HttpMethod.GET, entity ,String.class);
+		ResponseEntity<String> responseEntity;
+		
+	    while(true) {
+	    		try {
+	    			Thread.sleep(2000); // need to sleep because nurego mapping takes time to update
+	    			responseEntity = this.nuregoTemplate.exchange(builder.build().encode().toUri(), HttpMethod.GET, entity ,String.class);
+	    			break;
+	    		} catch(Exception ex) {
+	    			System.out.println("Attempting to retrieve component ID...");
+	    		}
+	    }
 	    String responseBody = responseEntity.getBody();
 	    
 	    @SuppressWarnings("unchecked")
@@ -191,7 +258,7 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 		final Calendar cal = Calendar.getInstance();
 		return cal.getTime();
 	}
-	private ResponseEntity retrieveRawUsage(String accessToken, String cmp_id) throws JsonParseException, JsonMappingException, IOException {
+	private ComponentUsage retrieveRawUsage(String accessToken, String cmp_id) throws JsonParseException, JsonMappingException, IOException {
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 		String retrieveRawUsage = Constants.NUREGO_USAGE_URL;
 		HttpHeaders headers = new HttpHeaders();
@@ -202,42 +269,43 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 		UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(retrieveRawUsage)
 				.queryParam("start_date", dateFormat.format(today()))
 				.queryParam("end_date",dateFormat.format(tomorrow()))
-				.queryParam("organization_id", ORGANIZATION_ID)
+				.queryParam("organization_id", Constants.ORGANIZATION_ID)
 				.queryParam("service_id", Constants.SERVICE_ID);
 		
 		HttpEntity<?> entity = new HttpEntity<>(headers);
 		System.out.println("url:"+builder.build().encode().toUri());
+		
 	    ResponseEntity<String> responseEntity = this.nuregoTemplate.exchange(builder.build().encode().toUri(), HttpMethod.GET, entity ,String.class);  
 	    String responseBody = responseEntity.getBody();
-	    
 	    System.out.println(responseBody);
-	    Assert.assertTrue(responseBody.contains(cmp_id));
-	    	return responseEntity;
+	    int componentCount = 0;
+	    double amountUsed = 0.0;
+	    List<Map<String,String>> list = parseCSV(responseBody);
+	    for(Map<?,?>map : list) {
+	    		if(map.get("Service component id").equals(cmp_id)) {
+	    			componentCount++;
+	    			amountUsed += Double.parseDouble((String) map.get("Amount"));
+	    		}
+	    }
+	    ComponentUsage usageInfo = new ComponentUsage(componentCount,amountUsed);
+	    return usageInfo;
+	}
+	
+	public List<Map<String,String>> parseCSV(String strResponse) throws IOException {
+		List<Map<String,String>> list = new ArrayList<Map<String,String>>();
+		CsvSchema schema = CsvSchema.emptySchema().withHeader();
+		ObjectReader mapper = new CsvMapper().reader(Object.class).with(schema);
+		MappingIterator<Map<String,String>> it = mapper.readValues(strResponse);
+		while(it.hasNext()) {
+			list.add(it.next());
+		}
+		return list;
 	}
 
-//    private Double getEntitlementUsageByFeatureId(final String featureId, final String subscriptionId)
-//            throws Exception {
-//        Entitlement entitlement = getEntitlementByFeatureId(featureId, subscriptionId);
-//        if (entitlement == null) {
-//            throw new IllegalArgumentException(String.format("Feature '%s' does not exist.", featureId));
-//        }
-//        return entitlement.getCurrentUsedAmount();
-//    }
-//
-//    private Entitlement getEntitlementByFeatureId(final String featureId, final String subscriptionId)
-//            throws Exception {
-//        List<Entitlement> entitlements = Entitlement.retrieve(subscriptionId).getData();
-//        for (Entitlement entitlement : entitlements) {
-//            if (entitlement.getFeatureId().equals(featureId)) {
-//                return entitlement;
-//            }
-//        }
-//
-//        return null;
-//    }
 
-    @DataProvider(name = "requestProvider")
-    public Object[][] getRequestProvider() {
+
+    @DataProvider(name = "requestProviderForOkResponse")
+    public Object[][] getRequestProviderForOkResponse() {
 
         MockHttpServletResponse createdResponse = new MockHttpServletResponse();
         createdResponse.setStatus(201);
@@ -245,7 +313,7 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
         okResponse.setStatus(200);
 
         MockHttpServletRequest policyEvalsRequest = new MockHttpServletRequest("POST", "/v1/policy-evaluation");
-        policyEvalsRequest.addHeader("Predix-Zone-Id", ACS_SUBSCRIPTION_ID);
+     //   policyEvalsRequest.addHeader("Predix-Zone-Id", serviceInstanceGuid);
 
         MockHttpServletRequest policySetUpdatesRequest = new MockHttpServletRequest("PUT", "/v1/policy-set/policy-007");
         policySetUpdatesRequest.addHeader("Predix-Zone-Id", ACS_SUBSCRIPTION_ID);
@@ -256,10 +324,37 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
         MockHttpServletRequest numberOfUsersRequest = new MockHttpServletRequest("POST", "/users");
         numberOfUsersRequest.addHeader("Predix-Zone-Id", UAA_SUBSCRIPTION_ID);
 
-        return new Object[][] {{ "policy_eval", ACS_PLAN_ID, ACS_SUBSCRIPTION_ID, policyEvalsRequest, okResponse }
-               // { "policyset_update", ACS_PLAN_ID, ACS_SUBSCRIPTION_ID, policySetUpdatesRequest, createdResponse },
-               // { "number_of_tokens", UAA_PLAN_ID, UAA_SUBSCRIPTION_ID, numberOfTokensRequest, okResponse },
+        return new Object[][] {//{ "policy_eval", ACS_PLAN_ID, ACS_SUBSCRIPTION_ID, policyEvalsRequest, okResponse },
+                //{ "policyset_update", ACS_PLAN_ID, ACS_SUBSCRIPTION_ID, policySetUpdatesRequest, createdResponse },
+                { "number_of_tokens", UAA_PLAN_ID, UAA_SUBSCRIPTION_ID, numberOfTokensRequest, okResponse },
                // { "number_of_users", UAA_PLAN_ID, UAA_SUBSCRIPTION_ID, numberOfUsersRequest, createdResponse } 
                 };
     }
+    
+//    @DataProvider(name = "requestProviderForCreatedResponse")
+//    public Object[][] getRequestProviderForCreatedResponse() {
+//
+//        MockHttpServletResponse createdResponse = new MockHttpServletResponse();
+//        createdResponse.setStatus(201);
+//        MockHttpServletResponse okResponse = new MockHttpServletResponse();
+//        okResponse.setStatus(200);
+//
+//        MockHttpServletRequest policyEvalsRequest = new MockHttpServletRequest("POST", "/v1/policy-evaluation");
+//     //   policyEvalsRequest.addHeader("Predix-Zone-Id", serviceInstanceGuid);
+//
+//        MockHttpServletRequest policySetUpdatesRequest = new MockHttpServletRequest("PUT", "/v1/policy-set/policy-007");
+//        policySetUpdatesRequest.addHeader("Predix-Zone-Id", ACS_SUBSCRIPTION_ID);
+//
+//        MockHttpServletRequest numberOfTokensRequest = new MockHttpServletRequest("POST", "/oauth/token");
+//        numberOfTokensRequest.addHeader("Predix-Zone-Id", UAA_SUBSCRIPTION_ID);
+//
+//        MockHttpServletRequest numberOfUsersRequest = new MockHttpServletRequest("POST", "/users");
+//        numberOfUsersRequest.addHeader("Predix-Zone-Id", UAA_SUBSCRIPTION_ID);
+//
+//        return new Object[][] {//{ "policy_eval", ACS_PLAN_ID, ACS_SUBSCRIPTION_ID, policyEvalsRequest, okResponse },
+//                { "policyset_update", ACS_PLAN_ID, ACS_SUBSCRIPTION_ID, policySetUpdatesRequest, createdResponse },
+//               // { "number_of_tokens", UAA_PLAN_ID, UAA_SUBSCRIPTION_ID, numberOfTokensRequest, okResponse },
+//                { "number_of_users", UAA_PLAN_ID, UAA_SUBSCRIPTION_ID, numberOfUsersRequest, createdResponse } 
+//                };
+//    }
 }
