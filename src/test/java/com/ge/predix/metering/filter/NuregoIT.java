@@ -136,11 +136,9 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
     public void testNuregoIntegrationForOkResponse(final String featureId, final String planId, final String subscriptionId,
             final  MockHttpServletRequest request, final ServletResponse response) throws Exception {
     	
-    		String uaaUrl = cfClientTest.setUAAInstance("secret", "pooja-uaa-2");
-    	try {
-    		System.out.println("uaa URL  = " + uaaUrl);
-    		serviceInstanceGuid = cfClientTest.testCreateServiceInstance();
-
+      try {
+     	String uaaUrl = cfClientTest.setUAAInstance("secret","uaa-pooja-10");
+     	serviceInstanceGuid = cfClientTest.testCreateServiceInstance(uaaUrl); 
     		
 	    	System.out.println("Created service Instance ::"+serviceInstanceGuid);
 	    	
@@ -160,7 +158,9 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 	    Assert.assertEquals(usages.getCompCount(), 2);
 	    Assert.assertEquals(usages.getUsage(), 2.0);
 	    
-    	} finally {
+    	} catch(Exception e){
+    		e.printStackTrace();
+    	}finally {
     		cleanup();
     	}
 	    
@@ -319,7 +319,7 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
         policySetUpdatesRequest.addHeader("Predix-Zone-Id", ACS_SUBSCRIPTION_ID);
 
         MockHttpServletRequest numberOfTokensRequest = new MockHttpServletRequest("POST", "/oauth/token");
-        numberOfTokensRequest.addHeader("Predix-Zone-Id", UAA_SUBSCRIPTION_ID);
+     //   numberOfTokensRequest.addHeader("Predix-Zone-Id", UAA_SUBSCRIPTION_ID);
 
         MockHttpServletRequest numberOfUsersRequest = new MockHttpServletRequest("POST", "/users");
         numberOfUsersRequest.addHeader("Predix-Zone-Id", UAA_SUBSCRIPTION_ID);

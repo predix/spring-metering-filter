@@ -32,8 +32,11 @@ public class CFClientTest extends AbstractTestNGSpringContextTests {
 	@Value("${CF_SPACE_GUID}")
 	private String cfSpaceGuid;
 
-	@Value("${SERVICE_PLAN_GUID}")
-	private String servicePlanGuid;
+	@Value("${UAA_SERVICE_PLAN_GUID}")
+	private String uaaServicePlanGuid;
+	
+	@Value("${ACS_SERVICE_PLAN_GUID}")
+	private String acsServicePlanGuid;
 
 	@Autowired
 	@Qualifier("cfTemplate")
@@ -62,12 +65,12 @@ public class CFClientTest extends AbstractTestNGSpringContextTests {
 		this.headers.put(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
 	}
 	
-	public String testCreateServiceInstance() throws Exception {
+	public String testCreateServiceInstance(String uaaUrl) throws Exception {
 
 		String serviceInstanceName = "dcs-metering-test";
-		String trustedIssuerId = "https://uaadummyurl.com/oauth/token";
+		//String trustedIssuerId = "https://e63b2f29-44a4-4e12-a444-a5677beabe5f.predix-uaa.run.aws-usw02-dev.ice.predix.io/oauth/token";
 
-		String serviceInstanceGuid = createNewServiceInstance(serviceInstanceName, trustedIssuerId);
+		String serviceInstanceGuid = createNewServiceInstance(serviceInstanceName, uaaUrl);
 		try {
 			verifyServiceInstanceCreated(serviceInstanceGuid);
 			
@@ -84,7 +87,7 @@ public class CFClientTest extends AbstractTestNGSpringContextTests {
 		HashMap<String, Object> serviceRequest = new HashMap<String, Object>();
 		serviceRequest.put("space_guid", this.cfSpaceGuid);
 		serviceRequest.put("name", serviceInstanceName);
-		serviceRequest.put("service_plan_guid", this.servicePlanGuid);
+		serviceRequest.put("service_plan_guid", this.acsServicePlanGuid);
 		Map<String, List<String>> issuerMap = new HashMap<String, List<String>>();
 		issuerMap.put("trustedIssuerIds", Arrays.asList(trustedIssuerId));
 		serviceRequest.put("parameters", issuerMap);
@@ -103,8 +106,12 @@ public class CFClientTest extends AbstractTestNGSpringContextTests {
 		HashMap<String, Object> serviceRequest = new HashMap<String, Object>();
 		serviceRequest.put("space_guid", this.cfSpaceGuid);
 		serviceRequest.put("name", serviceInstanceName);
-		serviceRequest.put("service_plan_guid", this.servicePlanGuid);
-		serviceRequest.put("adminClientSecret", secret);
+		serviceRequest.put("service_plan_guid", this.uaaServicePlanGuid);
+		
+		Map<String, String> issuerMap = new HashMap<String, String>();
+		issuerMap.put("adminClientSecret", secret);
+		serviceRequest.put("parameters", issuerMap);
+		
 		URI createInstanceURI = URI.create(this.cfControllerURL + "/v2/service_instances");
 		String response = this.cfRestTemplate.postForObject(createInstanceURI, serviceRequest, String.class);
 
@@ -112,7 +119,9 @@ public class CFClientTest extends AbstractTestNGSpringContextTests {
 		Map<String, Object> responseMap = new ObjectMapper().readValue(response, Map.class);
 		@SuppressWarnings("unchecked")
 		Map<String, Object> metadataMap = (Map<String, Object>) responseMap.get("entity");
-		return (String) metadataMap.get("dashboard_url");
+		String uaaGuid = (String)metadataMap.get("guid");
+		StringBuilder uaaUrl = new StringBuilder().append("https://").append(uaaGuid).append(".predix-uaa.run.aws-usw02-dev.ice.predix.io/oauth/token");
+		return uaaUrl.toString();
     	
     }
 
