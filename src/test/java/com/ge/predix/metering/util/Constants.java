@@ -10,7 +10,7 @@ public class Constants {
 	public static final String GUID = "guid";
 	public static final String CREATE_SERVICE_INSTANCE_URL = "/v2/service_instances/";
 	public static final String METADATA = "metadata";
-	public static final String SERVICE_INSTANCE_NAME = "dcs-metering-test";
+	public static final String SERVICE_INSTANCE_NAME = "acs-metering-test";
 	public static final String UAA_OAUTH_URL = "https://uaadummyurl.com/oauth/token";
 	public static final String USERNAME = "username";
 	public static final String PASSWORD = "password";
@@ -22,7 +22,7 @@ public class Constants {
 	public static final String CLOUD_FOUNDRY = "cloud-foundry";
 	public static final String ID = "id";
 	public static final String NUREGO_USAGE_URL = "https://api-stg-metering.nurego.com/v1/usages/raw/csv";
-	public static final String SERVICE_ID = "predix-acs";
+	public static final String SERVICE_ID = "predix-uaa";
     public static final String ORGANIZATION_ID = "7141ddb7-cb65-418f-8b38-fe280600ee6d";
 
 	

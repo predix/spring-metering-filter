@@ -65,6 +65,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.ge.predix.integration.cloudfoundry.CFClientTest;
+import com.ge.predix.integration.cloudfoundry.UaaInstance;
 import com.ge.predix.metering.util.Constants;
 import com.nurego.model.Entitlement;
 import com.nurego.model.Subscription;
@@ -81,8 +82,8 @@ import com.google.common.base.Splitter;
 public class NuregoIT extends AbstractTestNGSpringContextTests {
 
     private static final String ACS_PLAN_ID = "pla_b70d-6248-4a0b-8018-9fc6b9de29e6";
-    private static final String ACS_SUBSCRIPTION_ID = "sub_e854-2e8a-4f14-9d20-e45848e3c3ce";
-    private static final String UAA_SUBSCRIPTION_ID = "sub_d5a8-ff81-4722-9251-836b5508ed54";
+    //private static final String ACS_SUBSCRIPTION_ID = "sub_e854-2e8a-4f14-9d20-e45848e3c3ce";
+    //private static final String UAA_SUBSCRIPTION_ID = "sub_d5a8-ff81-4722-9251-836b5508ed54";
     private static final String UAA_PLAN_ID = "pla_8f0b-d679-463c-b3d6-977c10414aba";
     @Value("${NUREGO_USERNAME}")
     private String nuregoUsername;
@@ -107,6 +108,8 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
     
     private String serviceInstanceGuid;
     
+    private String uaaGuid;
+    
     @Autowired
 	@Qualifier("nuregoTemplate")
 	RestTemplate nuregoTemplate;
@@ -130,25 +133,30 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
     
     }
     
-
-    
+    @BeforeClass
+    public void setUp() {}
+      
     @Test(dataProvider = "requestProviderForOkResponse")
-    public void testNuregoIntegrationForOkResponse(final String featureId, final String planId, final String subscriptionId,
+    public void testNuregoIntegrationForOkResponse(final String featureId, final String planId,
             final  MockHttpServletRequest request, final ServletResponse response) throws Exception {
     	
       try {
-     	String uaaUrl = cfClientTest.setUAAInstance("secret","uaa-pooja-10");
-     	serviceInstanceGuid = cfClientTest.testCreateServiceInstance(uaaUrl); 
+    	  	UaaInstance uaa = cfClientTest.setUAAInstance("secret","uaa-pooja-23");
+     	//String uaaUrl = uaa.getUaaUrl();
+     	uaaGuid = uaa.getUaaGuid();
+     	System.out.println("UAA GUID::" + uaaGuid);
+     	
+     	//serviceInstanceGuid = cfClientTest.testCreateServiceInstance(uaaUrl); 
     		
-	    	System.out.println("Created service Instance ::"+serviceInstanceGuid);
+	   //	System.out.println("Created service Instance ::"+serviceInstanceGuid);
 	    	
 	    	String accessToken = getNuregoAuthToken();   	
 	    	System.out.println("accessToken::"+accessToken);	
-	    	String componentId= retrieveComponent(serviceInstanceGuid, accessToken);
+	    	String componentId= retrieveComponent(uaaGuid, accessToken);
 
 	   	System.out.println("componentId::"+componentId);
 	    	
-	   	request.addHeader("Predix-Zone-Id", serviceInstanceGuid);
+	   	request.addHeader("Predix-Zone-Id", uaaGuid);
 	    this.meteringFilter.doFilter(request, response, new MockFilterChain());
 	    Thread.sleep(4000);
 	    this.meteringFilter.doFilter(request, response, new MockFilterChain());
@@ -161,7 +169,7 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
     	} catch(Exception e){
     		e.printStackTrace();
     	}finally {
-    		cleanup();
+    	//	cleanup();
     	}
 	    
     }
@@ -197,7 +205,9 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
     
     private void cleanup() {
         cfClientTest.deleteServiceInstance(serviceInstanceGuid);
+        cfClientTest.deleteServiceInstance(uaaGuid);
         System.out.println("Successfully deleted " + serviceInstanceGuid);
+        System.out.println("Successfully deleted " + uaaGuid);
  
     }
     private String getNuregoAuthToken() throws Exception{
@@ -228,12 +238,13 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 				.queryParam("provider", "cloud-foundry");
 		
 		HttpEntity<?> entity = new HttpEntity<>(headers);
-		ResponseEntity<String> responseEntity;
-		
-	    while(true) {
+		ResponseEntity<String> responseEntity = null;
+		long time = System.currentTimeMillis();
+		long end = time+20000;
+	    while(System.currentTimeMillis() < end) {
 	    		try {
-	    			Thread.sleep(2000); // need to sleep because nurego mapping takes time to update
 	    			responseEntity = this.nuregoTemplate.exchange(builder.build().encode().toUri(), HttpMethod.GET, entity ,String.class);
+	    			Thread.sleep(2000); // need to sleep because nurego mapping takes time to update
 	    			break;
 	    		} catch(Exception ex) {
 	    			System.out.println("Attempting to retrieve component ID...");
@@ -312,21 +323,23 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
         MockHttpServletResponse okResponse = new MockHttpServletResponse();
         okResponse.setStatus(200);
 
+        
+        // first two are ACS and the other two are UAA 
         MockHttpServletRequest policyEvalsRequest = new MockHttpServletRequest("POST", "/v1/policy-evaluation");
      //   policyEvalsRequest.addHeader("Predix-Zone-Id", serviceInstanceGuid);
 
         MockHttpServletRequest policySetUpdatesRequest = new MockHttpServletRequest("PUT", "/v1/policy-set/policy-007");
-        policySetUpdatesRequest.addHeader("Predix-Zone-Id", ACS_SUBSCRIPTION_ID);
+        //policySetUpdatesRequest.addHeader("Predix-Zone-Id", ACS_SUBSCRIPTION_ID);
 
         MockHttpServletRequest numberOfTokensRequest = new MockHttpServletRequest("POST", "/oauth/token");
      //   numberOfTokensRequest.addHeader("Predix-Zone-Id", UAA_SUBSCRIPTION_ID);
 
         MockHttpServletRequest numberOfUsersRequest = new MockHttpServletRequest("POST", "/users");
-        numberOfUsersRequest.addHeader("Predix-Zone-Id", UAA_SUBSCRIPTION_ID);
+        //numberOfUsersRequest.addHeader("Predix-Zone-Id", UAA_SUBSCRIPTION_ID);
 
         return new Object[][] {//{ "policy_eval", ACS_PLAN_ID, ACS_SUBSCRIPTION_ID, policyEvalsRequest, okResponse },
                 //{ "policyset_update", ACS_PLAN_ID, ACS_SUBSCRIPTION_ID, policySetUpdatesRequest, createdResponse },
-                { "number_of_tokens", UAA_PLAN_ID, UAA_SUBSCRIPTION_ID, numberOfTokensRequest, okResponse },
+                { "number_of_tokens", UAA_PLAN_ID, numberOfTokensRequest, okResponse },
                // { "number_of_users", UAA_PLAN_ID, UAA_SUBSCRIPTION_ID, numberOfUsersRequest, createdResponse } 
                 };
     }

@@ -102,7 +102,7 @@ public class CFClientTest extends AbstractTestNGSpringContextTests {
 		return (String) metadataMap.get("guid");
 	}
 	
-    public String setUAAInstance(String secret, String serviceInstanceName) throws JsonParseException, JsonMappingException, IOException {
+    public UaaInstance setUAAInstance(String secret, String serviceInstanceName) throws JsonParseException, JsonMappingException, IOException {
 		HashMap<String, Object> serviceRequest = new HashMap<String, Object>();
 		serviceRequest.put("space_guid", this.cfSpaceGuid);
 		serviceRequest.put("name", serviceInstanceName);
@@ -118,10 +118,11 @@ public class CFClientTest extends AbstractTestNGSpringContextTests {
 		@SuppressWarnings("unchecked")
 		Map<String, Object> responseMap = new ObjectMapper().readValue(response, Map.class);
 		@SuppressWarnings("unchecked")
-		Map<String, Object> metadataMap = (Map<String, Object>) responseMap.get("entity");
+		Map<String, Object> metadataMap = (Map<String, Object>) responseMap.get("metadata");
 		String uaaGuid = (String)metadataMap.get("guid");
 		StringBuilder uaaUrl = new StringBuilder().append("https://").append(uaaGuid).append(".predix-uaa.run.aws-usw02-dev.ice.predix.io/oauth/token");
-		return uaaUrl.toString();
+		UaaInstance uaa = new UaaInstance(uaaUrl.toString(),uaaGuid);
+		return uaa;
     	
     }
 
