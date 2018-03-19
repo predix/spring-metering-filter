@@ -80,11 +80,7 @@ import com.google.common.base.Splitter;
 
 @ContextConfiguration("classpath:integration-test-spring-context.xml")
 public class NuregoIT extends AbstractTestNGSpringContextTests {
-
-    private static final String ACS_PLAN_ID = "pla_b70d-6248-4a0b-8018-9fc6b9de29e6";
-    //private static final String ACS_SUBSCRIPTION_ID = "sub_e854-2e8a-4f14-9d20-e45848e3c3ce";
-    //private static final String UAA_SUBSCRIPTION_ID = "sub_d5a8-ff81-4722-9251-836b5508ed54";
-    private static final String UAA_PLAN_ID = "pla_8f0b-d679-463c-b3d6-977c10414aba";
+    
     @Value("${NUREGO_USERNAME}")
     private String nuregoUsername;
 
@@ -146,7 +142,7 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
     }
     @Test(dataProvider = "requestProviderForOkResponse")
     public void testNuregoIntegrationForOkResponse(final String featureId, final String planId,
-            final  MockHttpServletRequest request, final ServletResponse response, final boolean acsFlag, final boolean okResponseFlag) throws Exception {
+            final  MockHttpServletRequest request, final ServletResponse response, final boolean acsFlag) throws Exception {
     		System.out.println("==================================" + featureId + "==========================================");
     		try {   
 	    	  	String guid = uaaGuid;
@@ -156,6 +152,9 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 		    	String accessToken = getNuregoAuthToken();   	
 		    	System.out.println("accessToken::"+accessToken);	
 		    	String componentId= retrieveComponent(guid, accessToken);
+		    	if(componentId == null) {
+		    		throw new IllegalStateException("Component ID is null because Nurego mapping is not updated.");
+		    	}
 	
 		   	System.out.println("componentId::"+componentId);
 		    	
@@ -221,7 +220,7 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 	    		}
 	    }
 	    if(responseEntity == null) {
-	    		
+	    		return null;
 	    }
 	    String responseBody = responseEntity.getBody();
 	    
@@ -302,7 +301,7 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
         createdResponse.setStatus(201);
         MockHttpServletResponse okResponse = new MockHttpServletResponse();
         okResponse.setStatus(200);  
-        // first two are ACS and the other two are UAA 
+
         MockHttpServletRequest policyEvalsRequest = new MockHttpServletRequest("POST", "/v1/policy-evaluation");
         policyEvalsRequest.addHeader("Predix-Zone-Id", serviceInstanceGuid);
 
@@ -315,10 +314,10 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
         MockHttpServletRequest numberOfUsersRequest = new MockHttpServletRequest("POST", "/users");
         numberOfUsersRequest.addHeader("Predix-Zone-Id", uaaGuid);
 
-        return new Object[][] {{ "policy_eval", ACS_PLAN_ID, policyEvalsRequest, okResponse, true, true },
-                { "policyset_update", ACS_PLAN_ID, policySetUpdatesRequest, createdResponse, true, false },
-                { "number_of_tokens", UAA_PLAN_ID, numberOfTokensRequest, okResponse, false, true },
-                { "number_of_users", UAA_PLAN_ID, numberOfUsersRequest, createdResponse, false, false } 
+        return new Object[][] {{ "policy_eval", Constants.ACS_PLAN_ID, policyEvalsRequest, okResponse, true},
+                { "policyset_update", Constants.ACS_PLAN_ID, policySetUpdatesRequest, createdResponse, true},
+                { "number_of_tokens", Constants.UAA_PLAN_ID, numberOfTokensRequest, okResponse, false},
+                { "number_of_users", Constants.UAA_PLAN_ID, numberOfUsersRequest, createdResponse, false} 
                 };
     }
     

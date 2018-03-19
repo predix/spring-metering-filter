@@ -25,7 +25,8 @@ public class Constants {
 	public static final String UAA_SERVICE_ID = "predix-uaa";
 	public static final String ACS_SERVICE_ID = "predix-acs";
     public static final String ORGANIZATION_ID = "7141ddb7-cb65-418f-8b38-fe280600ee6d";
-
+    public static final String ACS_PLAN_ID = "pla_b70d-6248-4a0b-8018-9fc6b9de29e6";
+    public static final String UAA_PLAN_ID = "pla_8f0b-d679-463c-b3d6-977c10414aba";
 	
 	
 }
