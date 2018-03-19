@@ -134,75 +134,45 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
     }
     
     @BeforeClass
-    public void setUp() {}
-      
-    @Test(dataProvider = "requestProviderForOkResponse")
-    public void testNuregoIntegrationForOkResponse(final String featureId, final String planId,
-            final  MockHttpServletRequest request, final ServletResponse response) throws Exception {
-    	
-      try {
-    	  	UaaInstance uaa = cfClientTest.setUAAInstance("secret","uaa-pooja-23");
-     	//String uaaUrl = uaa.getUaaUrl();
+    public void setUp() throws Exception {
+	  	UaaInstance uaa = cfClientTest.setUAAInstance("secret","uaa-pooja-23");
      	uaaGuid = uaa.getUaaGuid();
      	System.out.println("UAA GUID::" + uaaGuid);
-     	
-     	//serviceInstanceGuid = cfClientTest.testCreateServiceInstance(uaaUrl); 
-    		
-	   //	System.out.println("Created service Instance ::"+serviceInstanceGuid);
-	    	
-	    	String accessToken = getNuregoAuthToken();   	
-	    	System.out.println("accessToken::"+accessToken);	
-	    	String componentId= retrieveComponent(uaaGuid, accessToken);
+     	String uaaUrl = uaa.getUaaUrl();
+     	System.out.println("UAA URL::" + uaaUrl);
+     	serviceInstanceGuid = cfClientTest.testCreateServiceInstance(uaaUrl); 
+ 	   	System.out.println("Created service Instance ::"+serviceInstanceGuid);
 
-	   	System.out.println("componentId::"+componentId);
-	    	
-	   	request.addHeader("Predix-Zone-Id", uaaGuid);
-	    this.meteringFilter.doFilter(request, response, new MockFilterChain());
-	    Thread.sleep(4000);
-	    this.meteringFilter.doFilter(request, response, new MockFilterChain());
-	    Thread.sleep(4000);
-
-	    ComponentUsage usages = retrieveRawUsage(accessToken, componentId);
-	    Assert.assertEquals(usages.getCompCount(), 2);
-	    Assert.assertEquals(usages.getUsage(), 2.0);
-	    
-    	} catch(Exception e){
-    		e.printStackTrace();
-    	}finally {
-    	//	cleanup();
-    	}
-	    
     }
-    
-//    @Test(dataProvider = "requestProviderForCreatedResponse")
-//    public void testNuregoIntegrationForCreatedResponse(final String featureId, final String planId, final String subscriptionId,
-//            final  MockHttpServletRequest request, final ServletResponse response) throws Exception {
-//    		try {
-//			serviceInstanceGuid = cfClientTest.testCreateServiceInstance();
-//	
-//		    	System.out.println("Created service Instance ::"+serviceInstanceGuid);
-//		    	
-//		    	String accessToken = getNuregoAuthToken();   	
-//		    	System.out.println("accessToken::"+accessToken);	
-//		    	String componentId= retrieveComponent(serviceInstanceGuid, accessToken);
-//	
-//		   	System.out.println("componentId::"+componentId);
-//		    	
-//		   	request.addHeader("Predix-Zone-Id", serviceInstanceGuid);
-//		    this.meteringFilter.doFilter(request, response, new MockFilterChain());
-//		    Thread.sleep(4000);
-//		    this.meteringFilter.doFilter(request, response, new MockFilterChain());
-//		    Thread.sleep(4000);
-//	
-//		    ComponentUsage usages = retrieveRawUsage(accessToken, componentId);
-//		    Assert.assertEquals(usages.getCompCount(), 0);
-//		    Assert.assertEquals(usages.getUsage(), 0.0);
-//    		} finally {
-//    			cleanup();
-//    		}
-//	    
-//    }
-    
+    @Test(dataProvider = "requestProviderForOkResponse")
+    public void testNuregoIntegrationForOkResponse(final String featureId, final String planId,
+            final  MockHttpServletRequest request, final ServletResponse response, final boolean acsFlag, final boolean okResponseFlag) throws Exception {
+    		System.out.println("==================================" + featureId + "==========================================");
+    		try {   
+	    	  	String guid = uaaGuid;
+	     	if (acsFlag) {
+	     		guid = serviceInstanceGuid;
+	     	}
+		    	String accessToken = getNuregoAuthToken();   	
+		    	System.out.println("accessToken::"+accessToken);	
+		    	String componentId= retrieveComponent(guid, accessToken);
+	
+		   	System.out.println("componentId::"+componentId);
+		    	
+		    this.meteringFilter.doFilter(request, response, new MockFilterChain());
+		    Thread.sleep(4000);
+		    this.meteringFilter.doFilter(request, response, new MockFilterChain());
+		    Thread.sleep(4000);
+	
+		    ComponentUsage usages = retrieveRawUsage(accessToken, componentId, acsFlag, featureId);
+		    Assert.assertEquals(usages.getCompCount(), 2);
+		    Assert.assertEquals(usages.getUsage(), 2.0);
+    		} catch(Exception e){
+    			e.printStackTrace();
+    		}
+    }
+   
+    @AfterTest
     private void cleanup() {
         cfClientTest.deleteServiceInstance(serviceInstanceGuid);
         cfClientTest.deleteServiceInstance(uaaGuid);
@@ -250,6 +220,9 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 	    			System.out.println("Attempting to retrieve component ID...");
 	    		}
 	    }
+	    if(responseEntity == null) {
+	    		
+	    }
 	    String responseBody = responseEntity.getBody();
 	    
 	    @SuppressWarnings("unchecked")
@@ -269,20 +242,27 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 		final Calendar cal = Calendar.getInstance();
 		return cal.getTime();
 	}
-	private ComponentUsage retrieveRawUsage(String accessToken, String cmp_id) throws JsonParseException, JsonMappingException, IOException {
+	private ComponentUsage retrieveRawUsage(String accessToken, String cmp_id, boolean acsFlag, String featureId) throws JsonParseException, JsonMappingException, IOException {
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 		String retrieveRawUsage = Constants.NUREGO_USAGE_URL;
 		HttpHeaders headers = new HttpHeaders();
 		headers.add(HttpHeaders.ACCEPT, MediaType.ALL_VALUE);
 		headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
 		headers.add(HttpHeaders.AUTHORIZATION, Constants.BEARER +accessToken);
-		
-		UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(retrieveRawUsage)
-				.queryParam("start_date", dateFormat.format(today()))
-				.queryParam("end_date",dateFormat.format(tomorrow()))
-				.queryParam("organization_id", Constants.ORGANIZATION_ID)
-				.queryParam("service_id", Constants.SERVICE_ID);
-		
+		UriComponentsBuilder builder;
+		if(acsFlag) {
+			 builder = UriComponentsBuilder.fromUriString(retrieveRawUsage)
+					.queryParam("start_date", dateFormat.format(today()))
+					.queryParam("end_date",dateFormat.format(tomorrow()))
+					.queryParam("organization_id", Constants.ORGANIZATION_ID)
+					.queryParam("service_id", Constants.ACS_SERVICE_ID);
+		} else {
+			 builder = UriComponentsBuilder.fromUriString(retrieveRawUsage)
+					.queryParam("start_date", dateFormat.format(today()))
+					.queryParam("end_date",dateFormat.format(tomorrow()))
+					.queryParam("organization_id", Constants.ORGANIZATION_ID)
+					.queryParam("service_id", Constants.UAA_SERVICE_ID);
+		}
 		HttpEntity<?> entity = new HttpEntity<>(headers);
 		System.out.println("url:"+builder.build().encode().toUri());
 		
@@ -293,7 +273,7 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 	    double amountUsed = 0.0;
 	    List<Map<String,String>> list = parseCSV(responseBody);
 	    for(Map<?,?>map : list) {
-	    		if(map.get("Service component id").equals(cmp_id)) {
+	    		if(map.get("Service component id").equals(cmp_id) & map.get("Feature id").equals(featureId)) {
 	    			componentCount++;
 	    			amountUsed += Double.parseDouble((String) map.get("Amount"));
 	    		}
@@ -321,53 +301,26 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
         MockHttpServletResponse createdResponse = new MockHttpServletResponse();
         createdResponse.setStatus(201);
         MockHttpServletResponse okResponse = new MockHttpServletResponse();
-        okResponse.setStatus(200);
-
-        
+        okResponse.setStatus(200);  
         // first two are ACS and the other two are UAA 
         MockHttpServletRequest policyEvalsRequest = new MockHttpServletRequest("POST", "/v1/policy-evaluation");
-     //   policyEvalsRequest.addHeader("Predix-Zone-Id", serviceInstanceGuid);
+        policyEvalsRequest.addHeader("Predix-Zone-Id", serviceInstanceGuid);
 
         MockHttpServletRequest policySetUpdatesRequest = new MockHttpServletRequest("PUT", "/v1/policy-set/policy-007");
-        //policySetUpdatesRequest.addHeader("Predix-Zone-Id", ACS_SUBSCRIPTION_ID);
+        policySetUpdatesRequest.addHeader("Predix-Zone-Id", serviceInstanceGuid);
 
         MockHttpServletRequest numberOfTokensRequest = new MockHttpServletRequest("POST", "/oauth/token");
-     //   numberOfTokensRequest.addHeader("Predix-Zone-Id", UAA_SUBSCRIPTION_ID);
+        numberOfTokensRequest.addHeader("Predix-Zone-Id", uaaGuid);
 
         MockHttpServletRequest numberOfUsersRequest = new MockHttpServletRequest("POST", "/users");
-        //numberOfUsersRequest.addHeader("Predix-Zone-Id", UAA_SUBSCRIPTION_ID);
+        numberOfUsersRequest.addHeader("Predix-Zone-Id", uaaGuid);
 
-        return new Object[][] {//{ "policy_eval", ACS_PLAN_ID, ACS_SUBSCRIPTION_ID, policyEvalsRequest, okResponse },
-                //{ "policyset_update", ACS_PLAN_ID, ACS_SUBSCRIPTION_ID, policySetUpdatesRequest, createdResponse },
-                { "number_of_tokens", UAA_PLAN_ID, numberOfTokensRequest, okResponse },
-               // { "number_of_users", UAA_PLAN_ID, UAA_SUBSCRIPTION_ID, numberOfUsersRequest, createdResponse } 
+        return new Object[][] {{ "policy_eval", ACS_PLAN_ID, policyEvalsRequest, okResponse, true, true },
+                { "policyset_update", ACS_PLAN_ID, policySetUpdatesRequest, createdResponse, true, false },
+                { "number_of_tokens", UAA_PLAN_ID, numberOfTokensRequest, okResponse, false, true },
+                { "number_of_users", UAA_PLAN_ID, numberOfUsersRequest, createdResponse, false, false } 
                 };
     }
     
-//    @DataProvider(name = "requestProviderForCreatedResponse")
-//    public Object[][] getRequestProviderForCreatedResponse() {
-//
-//        MockHttpServletResponse createdResponse = new MockHttpServletResponse();
-//        createdResponse.setStatus(201);
-//        MockHttpServletResponse okResponse = new MockHttpServletResponse();
-//        okResponse.setStatus(200);
-//
-//        MockHttpServletRequest policyEvalsRequest = new MockHttpServletRequest("POST", "/v1/policy-evaluation");
-//     //   policyEvalsRequest.addHeader("Predix-Zone-Id", serviceInstanceGuid);
-//
-//        MockHttpServletRequest policySetUpdatesRequest = new MockHttpServletRequest("PUT", "/v1/policy-set/policy-007");
-//        policySetUpdatesRequest.addHeader("Predix-Zone-Id", ACS_SUBSCRIPTION_ID);
-//
-//        MockHttpServletRequest numberOfTokensRequest = new MockHttpServletRequest("POST", "/oauth/token");
-//        numberOfTokensRequest.addHeader("Predix-Zone-Id", UAA_SUBSCRIPTION_ID);
-//
-//        MockHttpServletRequest numberOfUsersRequest = new MockHttpServletRequest("POST", "/users");
-//        numberOfUsersRequest.addHeader("Predix-Zone-Id", UAA_SUBSCRIPTION_ID);
-//
-//        return new Object[][] {//{ "policy_eval", ACS_PLAN_ID, ACS_SUBSCRIPTION_ID, policyEvalsRequest, okResponse },
-//                { "policyset_update", ACS_PLAN_ID, ACS_SUBSCRIPTION_ID, policySetUpdatesRequest, createdResponse },
-//               // { "number_of_tokens", UAA_PLAN_ID, UAA_SUBSCRIPTION_ID, numberOfTokensRequest, okResponse },
-//                { "number_of_users", UAA_PLAN_ID, UAA_SUBSCRIPTION_ID, numberOfUsersRequest, createdResponse } 
-//                };
-//    }
+
 }
