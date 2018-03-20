@@ -40,7 +40,7 @@ import org.testng.annotations.Test;
 import com.ge.predix.metering.customer.Customer;
 import com.ge.predix.metering.data.entity.MeteredResource;
 
-@Test(groups = { "asyncNuregoSingleThreadedTest" })
+//@Test(groups = { "asyncNuregoSingleThreadedTest" })
 public class AsyncNuregoClientTest {
 
     private static final String SUBSCRIPTION_1 = "subscription_1";
@@ -70,7 +70,7 @@ public class AsyncNuregoClientTest {
                         .thenReturn(new ResponseEntity<>(new NuregoTokenResponse("1234", EXPIRY), HttpStatus.OK));
     }
 
-    @Test
+   // @Test
     public void testExceedMaxMapSize() {
 
         AsyncNuregoClient nuregoClient = new AsyncNuregoClient("https://mockNuregoUrl.com", 3, 3, NUREGO_USERNAME,
@@ -93,7 +93,7 @@ public class AsyncNuregoClientTest {
         Assert.assertEquals(internalState2.size(), 0);
     }
 
-    @Test
+    //@Test
     public void testExceedBatchIntervalSeconds() throws InterruptedException {
 
         AsyncNuregoClient nuregoClient = new AsyncNuregoClient("https://mockNuregoUrl.com", 3, 3, NUREGO_USERNAME,
@@ -117,7 +117,7 @@ public class AsyncNuregoClientTest {
         Assert.assertEquals(internalState2.size(), 0);
     }
 
-    @Test
+    //@Test
     public void testGetNuregoToken() throws Exception {
         setup();
         AsyncNuregoClient nuregoClient = new AsyncNuregoClient("https://mockNuregoUrl.com", 3, 3, NUREGO_USERNAME,

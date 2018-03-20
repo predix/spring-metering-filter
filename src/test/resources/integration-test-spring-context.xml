@@ -30,6 +30,28 @@
             </list>
         </property>
     </bean>
+    
+    <bean id="cfTemplate"
+        class="org.springframework.security.oauth2.client.OAuth2RestTemplate">
+        <constructor-arg>
+            <bean
+                class="org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails">
+                <property name="accessTokenUri" value="${CF_TOKEN_URI}" />
+                <property name="clientId" value="cf" />
+                <property name="clientSecret" value="" />
+                <property name="username" value="${CF_USERNAME}" />
+                <property name="password" value="${CF_PASSWORD}" />
+            </bean>
+        </constructor-arg>
+    </bean>
+    
+    <bean id="cfClientTest"
+        class="com.ge.predix.integration.cloudfoundry.CFClientTest"/>   
+    
+    
+    <bean id="nuregoTemplate"
+        class="org.springframework.web.client.RestTemplate"/>
 
     <import resource="classpath:META-INF/spring-metering-filter.xml" /> 
+    
 </beans>

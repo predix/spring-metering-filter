@@ -40,7 +40,7 @@ import org.testng.annotations.Test;
 import com.ge.predix.metering.customer.Customer;
 import com.ge.predix.metering.data.entity.MeteredResource;
 
-@Test(dependsOnGroups = "asyncNuregoSingleThreadedTest")
+//@Test(dependsOnGroups = "asyncNuregoSingleThreadedTest")
 public class AsyncNuregoClientMultiThreadTest {
 
     private static final String SUBSCRIPTION_1 = "subscription_123";
@@ -79,7 +79,7 @@ public class AsyncNuregoClientMultiThreadTest {
         this.asyncNuregoClient.setRestTemplate(restTemplate);
     }
 
-    @Test(threadPoolSize = 5, invocationCount = 5, dataProvider = "meterDataProvider")
+    //@Test(threadPoolSize = 5, invocationCount = 5, dataProvider = "meterDataProvider")
     public void testUpdateAmount(final Customer customer, final MeteredResource meter, final int amount) {
         this.asyncNuregoClient.updateAmount(customer, meter, amount);
     }
@@ -87,7 +87,7 @@ public class AsyncNuregoClientMultiThreadTest {
     /**
      * This test asserts the cumulative count of updates executed in {@link #testUpdateAmount()} with mutliple threads
      */
-    @Test(dependsOnMethods = "testUpdateAmount")
+   // @Test(dependsOnMethods = "testUpdateAmount")
     public void testAssertMeterData() {
         // flush any updates in cache
         this.asyncNuregoClient.flushMeterUpdates();
