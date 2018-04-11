@@ -12,6 +12,7 @@ mvn clean package
 ```
 ## Run Integration Tests
 
+
 * To execute the integration tests, you need to export valid values for the following:
 
   * NUREGO_API_TEST_URL
@@ -37,6 +38,9 @@ mvn clean verify -s ../spring-filters-config/mvn_settings.xml
 ```
 
 * To execute the integration tests, you will need to source the env variables from the spring-filters-config repo, under the fixMeteringIntegTests branch. 
+
+* To execute the integration tests, you will need to source the env variables from the spring-filters-config repo, under the fixMeteringIntegTests branch. In the commands below, I have the spring-filters-config file in another folder.
+
 
 * If you are behind a network proxy, run 
 ```unix
