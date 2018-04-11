@@ -113,6 +113,7 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
             Integer entryCurrentAmount = entry.getValue();
             String url = String.format("%s/v1/subscriptions/%s/entitlements/usage", Nurego.getApiBase(),
                     customerMeteredResource.getCustomer().getSubscriptionId());
+            
             usageParams.put("feature_id", customerMeteredResource.getMeteredResource().getFeatureId());
             usageParams.put("amount", entryCurrentAmount);
 
