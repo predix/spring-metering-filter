@@ -58,7 +58,7 @@ public class ZoneBasedCustomerResolver implements CustomerResolver {
 
     /**
      * @return empty string if requestHostname and baseDomain are identical, null if domain is not a sub-string of
-     * requestHostname
+     *         requestHostname
      */
     static String getZoneNameFromRequestHostName(final String requestHostname, final String baseDomain) {
 
