@@ -47,11 +47,10 @@
     
     <bean id="serviceInstanceHelper"
         class="com.ge.predix.metering.util.ServiceInstanceHelper"/>   
-    
-    
-    <bean id="nuregoTemplate"
-        class="org.springframework.web.client.RestTemplate"/>
 
+	<bean id="nuregoTemplate" 
+        class="org.springframework.web.client.RestTemplate"/>
+  
     <import resource="classpath:META-INF/spring-metering-filter.xml" /> 
     
 </beans>

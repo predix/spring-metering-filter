@@ -63,7 +63,7 @@ import com.ge.predix.metering.util.UaaInstance;
 
 @ContextConfiguration("classpath:integration-test-spring-context.xml")
 public class NuregoIT extends AbstractTestNGSpringContextTests {
-    
+  
     @Value("${NUREGO_USERNAME}")
     private String nuregoUsername;
 
@@ -158,7 +158,6 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 
 		URI oauthURL = URI.create(this.nuregoURL + Constants.NUREGO_AUTH_TOKEN_URL);
 		String response = this.nuregoTemplate.postForObject(oauthURL, serviceRequest, String.class);
-
 		@SuppressWarnings("unchecked")
 		Map<String, Object> responseMap = new ObjectMapper().readValue(response, Map.class);
 		return responseMap.get(Constants.ACCESS_TOKEN).toString();
