@@ -12,16 +12,15 @@ mvn clean package
 ```
 ## Run Integration Tests
 
-* To execute the integration tests, you need to export valid values for the following:
-	* NUREGO_API_TEST_URL
-	* NUREGO_TEST_USERNAME
-	* NUREGO_TEST_PASSWORD
-	* NUREGO_TEST_INSTANCE_ID
-* If you are behind a network proxy, you will also need to configure:
-	*  HTTPS_PROXY_HOST
-	*  HTTPS_PROXY_PORT
-	*  NON_PROXY_HOSTS
+* To execute the integration tests, you will need to source the env variables from the spring-filters-config repo, under the fixMeteringIntegTests branch. 
+
+* If you are behind a network proxy, run 
 ```unix
-mvn clean verify
+mvn clean verify -s ../spring-filters-config/mvn_settings.xml -Dhttp.proxyHost=sjc1intproxy02.crd.ge.com -Dhttp.proxyPort=8080 -Dhttps.proxyHost=sjc1intproxy02.crd.ge.com -Dhttps.proxyPort=8080
 ```
+* If you are on Internet, run 
+```unix 
+mvn clean verify -s ../spring-filters-config/mvn_settings.xml 
+```
+
 
