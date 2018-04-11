@@ -43,12 +43,18 @@ mvn clean verify -s ../spring-filters-config/mvn_settings.xml
 
 
 * If you are behind a network proxy, run 
-```unix
-mvn clean verify -s ../spring-filters-config/mvn_settings.xml -Dhttp.proxyHost=sjc1intproxy02.crd.ge.com -Dhttp.proxyPort=8080 -Dhttps.proxyHost=sjc1intproxy02.crd.ge.com -Dhttps.proxyPort=8080
-```
-* If you are on Internet, run 
-```unix 
-mvn clean verify -s ../spring-filters-config/mvn_settings.xml 
-```
 
+* To execute the integration tests, you need to export valid values for the following:
+  NUREGO_API_TEST_URL
+  NUREGO_TEST_USERNAME
+  NUREGO_TEST_PASSWORD
+  NUREGO_TEST_INSTANCE_ID
+* If you are behind a network proxy, you will also need to configure:
+  HTTPS_PROXY_HOST
+  HTTPS_PROXY_PORT
+  NON_PROXY_HOSTS
+
+```unix
+mvn clean verify
+```
 
