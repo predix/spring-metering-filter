@@ -8,6 +8,8 @@ def artUploadServer = Artifactory.server('devcloud')
 
 // Change Snapshot to your own DevCloud Artifactory repo name
 def Snapshot = 'PROPEL'
+library "security-ci-commons-shared-lib"
+def NODE = nodeDetails("java")
 
 
 pipeline {
@@ -18,6 +20,7 @@ pipeline {
         docker {
             image "${NODE['IMAGE']}"
             label "${NODE['LABEL']}"
+
         }
     }
     stages {
@@ -25,6 +28,8 @@ pipeline {
             image 'maven:3.5'
             image 'repo.ci.build.ge.com:8443/predixci-jdk-1.8-base'
             label 'dind'
+
+
         }
     }
     stages {
