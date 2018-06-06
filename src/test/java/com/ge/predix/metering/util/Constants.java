@@ -8,7 +8,8 @@ public class Constants {
 	public static final String TRUSTED_ISSUER_IDS = "trustedIssuerIds";
 	public static final String PARAMETERS = "parameters";
 	public static final String GUID = "guid";
-	public static final String CREATE_SERVICE_INSTANCE_URL = "/v2/service_instances/";
+	public static final String CREATE_SERVICE_INSTANCE_URL = "/v2/service_instances";
+	public static final String ACCEPTS_INCOMPLETE = "?accepts_incomplete=true";
 	public static final String METADATA = "metadata";
 	public static final String ACS_SERVICE_INSTANCE_NAME = "acs-metering-test";
 	public static final String UAA_SERVICE_INSTANCE_NAME = "uaa-metering-test";

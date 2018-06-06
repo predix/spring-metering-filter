@@ -29,7 +29,7 @@ import java.util.Map;
 
 import javax.servlet.ServletResponse;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -59,6 +59,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import com.ge.predix.metering.nurego.AsyncNuregoClient;
 import com.ge.predix.metering.util.Constants;
 import com.ge.predix.metering.util.ServiceInstanceHelper;
 import com.ge.predix.metering.util.UaaInstance;
@@ -94,6 +95,7 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 
 	private String nuregoToken;
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(NuregoIT.class);
 
 	@BeforeClass
 	public void setUp() throws Exception {
@@ -171,7 +173,6 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 				Thread.sleep(2000); // need to sleep because nurego mapping takes time to update
 				break;
 			} catch(Exception ex) {
-				Logger logger = (Logger) LoggerFactory.getLogger(NuregoIT.class);
 				logger.info("Attempting to retrieve component ID...");
 			}
 		}
