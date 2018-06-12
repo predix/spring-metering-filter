@@ -111,7 +111,12 @@ public class ServiceInstanceHelper extends AbstractTestNGSpringContextTests {
 		serviceRequest.put(Constants.PARAMETERS, issuerMap);
 
 		URI createInstanceURI = URI.create(this.cfControllerURL + Constants.CREATE_SERVICE_INSTANCE_URL + Constants.ACCEPTS_INCOMPLETE);
-		String response = this.cfRestTemplate.postForObject(createInstanceURI, serviceRequest, String.class);
+		String response = "";
+		try {
+			 response = this.cfRestTemplate.postForObject(createInstanceURI, serviceRequest, String.class);
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
 
 		@SuppressWarnings("unchecked")
 		Map<String, Object> responseMap = new ObjectMapper().readValue(response, Map.class);

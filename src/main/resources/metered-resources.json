@@ -31,6 +31,12 @@
         },
         {
             "httpMethod":"POST",
+            "uriTemplate":"/cs/v1/certificate/create",
+            "expectedHttpStatusCode": "200",
+            "featureId":"num_certs"
+        },
+        {
+            "httpMethod":"POST",
             "uriTemplate":"/uaa/users",
             "expectedHttpStatusCode": "201",
             "featureId":"number_of_users"
