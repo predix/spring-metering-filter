@@ -34,7 +34,7 @@ public class JsonUtilsTest {
         @SuppressWarnings("unchecked")
         List<MeteredResource> meteredResource = this.jsonUtils.deserializeFromFile("metered-resources.json",
                 List.class);
-        Assert.assertEquals(meteredResource.size(), 6);
+        Assert.assertEquals(meteredResource.size(), 7);
     }
 
     @Test
