@@ -18,7 +18,7 @@ pipeline {
             steps {
                 checkout scm
                 dir('spring-filters-config') {
-                    git branch: 'master', changelog: false, credentialsId: 'github.build.ge.com', poll: false, url: 'https://github.build.ge.com/predix/spring-filters-config.git'
+                    git branch: 'fixMeteringIntegTests', changelog: false, credentialsId: 'github.build.ge.com', poll: false, url: 'https://github.build.ge.com/predix/spring-filters-config.git'
                 }
                 sh '''#!/bin/bash -ex
                     source spring-filters-config/set-env-metering-filter.sh
