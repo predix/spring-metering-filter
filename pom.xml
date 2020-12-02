@@ -61,6 +61,7 @@
         <spring-cloud-netflix-core.version>1.0.3.RELEASE</spring-cloud-netflix-core.version>
         <hystrix-javanica.version>1.4.18</hystrix-javanica.version>
         <httpasyncclient.version>4.1</httpasyncclient.version>
+        <slf4j.version>1.7.30</slf4j.version>
         <!-- Test Dependency Version -->
         <mockito.version>1.9.0</mockito.version>
         <testng.version>6.8</testng.version>
@@ -145,6 +146,11 @@
             <artifactId>json-schema-validator</artifactId>
             <version>2.2.6</version>
         </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
         <!-- For Testing -->
         <dependency>
             <groupId>org.testng</groupId>
@@ -160,8 +166,9 @@
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>1.7.12</version>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${slf4j.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
