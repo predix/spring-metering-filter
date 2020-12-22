@@ -48,7 +48,7 @@ pipeline {
             steps {
                 script {
                     if (env.BRANCH_NAME == 'master') {
-                    echo 'Branch is master push to MAAXA-MVN and maven central'
+                    echo 'Branch is master push to MAAXA and maven central'
                         sh '''#!/bin/bash -ex
                             apk update
                             apk add --no-cache gnupg
@@ -56,7 +56,7 @@ pipeline {
                             ln -s ${WORKSPACE} /working-dir
 
                             mvn clean deploy -B -s spring-filters-config/mvn_settings_noproxy.xml \\
-                            -DaltDeploymentRepository=artifactory.releases::default::https://devcloud.swcoe.ge.com/artifactory/MAAXA-MVN \\
+                            -DaltDeploymentRepository=artifactory.releases::default::https://artifactory.build.ge.com/MAAXA \\
                             -Dartifactory.password=${DEPLOY_CREDS_PSW} \\
                             -D skipTests -e
 
@@ -68,10 +68,10 @@ pipeline {
                         '''
                     }
                     else {
-                        echo 'Branch is develop push to MAAXA-MVN-SNAPSHOT'
+                        echo 'Branch is develop push to MAAXA-SNAPSHOT'
                         sh '''#!/bin/bash -ex
                             mvn clean deploy -B -s spring-filters-config/mvn_settings_noproxy.xml \\
-                            -DaltDeploymentRepository=artifactory.releases::default::https://devcloud.swcoe.ge.com/artifactory/MAAXA-MVN-SNAPSHOT \\
+                            -DaltDeploymentRepository=artifactory.releases::default::https://artifactory.build.ge.com/MAAXA-SNAPSHOT \\
                             -Dartifactory.password=${DEPLOY_CREDS_PSW} \\
                             -D skipTests -e
                         '''
