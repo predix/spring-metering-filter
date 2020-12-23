@@ -26,9 +26,18 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.ServletResponse;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.MappingIterator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import com.ge.predix.metering.util.Constants;
+import com.ge.predix.metering.util.ServiceInstanceHelper;
+import com.ge.predix.metering.util.UaaInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +53,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.testng.Assert;
@@ -51,18 +61,6 @@ import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.MappingIterator;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.dataformat.csv.CsvMapper;
-import com.fasterxml.jackson.dataformat.csv.CsvSchema;
-import com.ge.predix.metering.nurego.AsyncNuregoClient;
-import com.ge.predix.metering.util.Constants;
-import com.ge.predix.metering.util.ServiceInstanceHelper;
-import com.ge.predix.metering.util.UaaInstance;
 
 @ContextConfiguration("classpath:integration-test-spring-context.xml")
 public class NuregoIT extends AbstractTestNGSpringContextTests {
@@ -74,7 +72,7 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 	private String nuregoPassword;
 
 	@Value("${NUREGO_INSTANCE_ID}")
-	private String nuregoInstanceId;    
+	private String nuregoInstanceId;
 
 	@Value("${NUREGO_API_TEST_URL}")
 	private String nuregoURL;
@@ -169,12 +167,15 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 		//Component id is not updated immediately in Nurego after service instance creation, there is a delay. Hence trying it for 20 seconds.
 		while(System.currentTimeMillis() < end) {
 			try {
+				LOGGER.info("Attempting to retrieve component ID...");
 				responseEntity = this.nuregoTemplate.exchange(builder.build().encode().toUri(), HttpMethod.GET, entity ,String.class);
-				Thread.sleep(2000); // need to sleep because nurego mapping takes time to update
 				break;
-			} catch(Exception ex) {
-				logger.info("Attempting to retrieve component ID...");
+			} catch(HttpStatusCodeException ex) {
+				LOGGER.error("Cannot retrieve component ID: {}\n{}", ex.getStatusText(), ex.getResponseBodyAsString());
+			} catch (Exception ex) {
+				LOGGER.error("Cannot retrieve component ID", ex);
 			}
+			Thread.sleep(2000); // need to sleep because nurego mapping takes time to update
 		}
 		if(responseEntity == null) {
 			return null;
@@ -182,7 +183,7 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 		String responseBody = responseEntity.getBody();
 
 		@SuppressWarnings("unchecked")
-		Map<String,Object> map = new ObjectMapper().readValue(responseBody, Map.class);	    
+		Map<String,Object> map = new ObjectMapper().readValue(responseBody, Map.class);
 		return map.get(Constants.ID).toString();
 
 	}
@@ -214,8 +215,8 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 				.queryParam("organization_id", Constants.ORGANIZATION_ID)
 				.queryParam("service_id", serviceId);
 
-		HttpEntity<?> entity = new HttpEntity<>(headers);		
-		ResponseEntity<String> responseEntity = this.nuregoTemplate.exchange(builder.build().encode().toUri(), HttpMethod.GET, entity ,String.class);  
+		HttpEntity<?> entity = new HttpEntity<>(headers);
+		ResponseEntity<String> responseEntity = this.nuregoTemplate.exchange(builder.build().encode().toUri(), HttpMethod.GET, entity ,String.class);
 		String responseBody = responseEntity.getBody();
 		int componentCount = 0;
 		double amountUsed = 0.0;
@@ -249,7 +250,7 @@ public class NuregoIT extends AbstractTestNGSpringContextTests {
 		MockHttpServletResponse createdResponse = new MockHttpServletResponse();
 		createdResponse.setStatus(201);
 		MockHttpServletResponse okResponse = new MockHttpServletResponse();
-		okResponse.setStatus(200);  
+		okResponse.setStatus(200);
 
 		MockHttpServletRequest policyEvalsRequest = new MockHttpServletRequest("POST", "/v1/policy-evaluation");
 		policyEvalsRequest.addHeader("Predix-Zone-Id", acsInstanceId);
