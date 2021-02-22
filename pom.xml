@@ -44,7 +44,7 @@
         <url>https://github.com/predix/spring-metering-filter</url>
     </scm>
     <properties>
-        <spring-security-oauth2.version>2.0.3.RELEASE</spring-security-oauth2.version>
+        <spring-security-oauth2.version>2.5.0.RELEASE</spring-security-oauth2.version>
         <commons-lang.version>2.6</commons-lang.version>
         <commons-collections4.version>4.0</commons-collections4.version>
         <!-- Maven JAVA Version -->
@@ -55,16 +55,16 @@
         <maven-bundle-plugin.version>2.3.7</maven-bundle-plugin.version>
         <nurego-java.version>1.0.18</nurego-java.version>
         <jackson.version>2.5.4</jackson.version>
-        <spring-security-jwt.version>1.0.2.RELEASE</spring-security-jwt.version>
-        <spring-core.version>4.1.4.RELEASE</spring-core.version>
-        <spring-data.version>1.9.1.RELEASE</spring-data.version>
+        <spring-security-jwt.version>1.1.1.RELEASE</spring-security-jwt.version>
+        <spring-core.version>5.3.4</spring-core.version>
+        <spring-data.version>2.4.5</spring-data.version>
         <spring-cloud-netflix-core.version>1.0.3.RELEASE</spring-cloud-netflix-core.version>
         <hystrix-javanica.version>1.4.18</hystrix-javanica.version>
         <httpasyncclient.version>4.1</httpasyncclient.version>
         <slf4j.version>1.7.30</slf4j.version>
         <!-- Test Dependency Version -->
-        <mockito.version>1.9.0</mockito.version>
-        <testng.version>6.8</testng.version>
+        <mockito.version>1.10.19</mockito.version>
+        <testng.version>7.3.0</testng.version>
         <cloudfoundry-identity-common.version>2.3.2-GE</cloudfoundry-identity-common.version>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
@@ -98,7 +98,12 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
             <version>${spring-core.version}</version>
-        </dependency> 
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>${spring-core.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.security.oauth</groupId>
             <artifactId>spring-security-oauth2</artifactId>
@@ -124,12 +129,12 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-beans</artifactId>
-            <version>4.1.6.RELEASE</version>
+            <version>${spring-core.version}</version>
         </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
-            <version>3.1.0</version>
+            <version>4.0.1</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

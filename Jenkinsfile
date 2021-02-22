@@ -14,11 +14,11 @@ pipeline {
         }
     }
     stages {
-        stage('Test and Deploy Extensions') {
+        stage('Build and Test') {
             steps {
                 checkout scm
                 dir('spring-filters-config') {
-                    git branch: 'fixMeteringIntegTests', changelog: false, credentialsId: 'github.build.ge.com', poll: false, url: 'https://github.build.ge.com/predix/spring-filters-config.git'
+                    git branch: 'master', changelog: false, credentialsId: 'github.build.ge.com', poll: false, url: 'https://github.build.ge.com/predix/spring-filters-config.git'
                 }
                 sh '''#!/bin/bash -ex
                     source spring-filters-config/set-env-metering-filter.sh
@@ -26,7 +26,7 @@ pipeline {
                     unset HTTPS_PROXY_PORT
                     unset HTTPS_PROXY_HOST
 
-                    mvn clean verify -s spring-filters-config/mvn_settings_noproxy.xml
+                    mvn -B clean verify -s spring-filters-config/mvn_settings_noproxy.xml
                 '''
             }
             post {
