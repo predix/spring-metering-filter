@@ -24,7 +24,7 @@ unset HTTPS_PROXY_HOST
 mvn clean install -s ../spring-filters-config/mvn_settings_noproxy.xml
 ```
 
-*To run integration tests behind a network proxy:
+* To run integration tests behind a network proxy:
 ```bash 
 source ../spring-filters-config/set-env-metering-filter.sh 
 
