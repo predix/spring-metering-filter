@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2017 General Electric Company
+ * Copyright 2021 General Electric Company
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import com.ge.predix.metering.data.entity.JsonUtils;
 import com.ge.predix.metering.data.entity.MeteredResource;
 import com.ge.predix.metering.data.entity.MeteredResources;
 
+import java.util.Optional;
+
 public class DefaultMeteredResourceRepository implements MeteredResourceRepository {
 
     private final MeteredResources meters;
@@ -37,19 +39,19 @@ public class DefaultMeteredResourceRepository implements MeteredResourceReposito
     }
 
     @Override
-    public <S extends MeteredResource> Iterable<S> save(final Iterable<S> entities) {
+    public <S extends MeteredResource> Iterable<S> saveAll(final Iterable<S> entities) {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public MeteredResource findOne(final Long id) {
+    public Optional<MeteredResource> findById(final Long id) {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public boolean exists(final Long id) {
+    public boolean existsById(final Long id) {
         // TODO Auto-generated method stub
         return false;
     }
@@ -60,7 +62,7 @@ public class DefaultMeteredResourceRepository implements MeteredResourceReposito
     }
 
     @Override
-    public Iterable<MeteredResource> findAll(final Iterable<Long> ids) {
+    public Iterable<MeteredResource> findAllById(final Iterable<Long> ids) {
         // TODO Auto-generated method stub
         return null;
     }
@@ -71,7 +73,7 @@ public class DefaultMeteredResourceRepository implements MeteredResourceReposito
     }
 
     @Override
-    public void delete(final Long id) {
+    public void deleteById(final Long id) {
         // TODO Auto-generated method stub
 
     }
@@ -83,7 +85,7 @@ public class DefaultMeteredResourceRepository implements MeteredResourceReposito
     }
 
     @Override
-    public void delete(final Iterable<? extends MeteredResource> entities) {
+    public void deleteAll(final Iterable<? extends MeteredResource> entities) {
         // TODO Auto-generated method stub
 
     }

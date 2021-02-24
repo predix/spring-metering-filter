@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2017 General Electric Company
+ * Copyright 2021 General Electric Company
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,14 @@
 
 package com.ge.predix.metering.customer;
 
+import static org.springframework.util.StringUtils.hasText;
+import static org.springframework.util.StringUtils.trimWhitespace;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,16 +39,16 @@ public class ZoneBasedCustomerResolver implements CustomerResolver {
     public Customer resolveCustomer(final HttpServletRequest request) {
 
         String zone;
-        if (StringUtils.isNotEmpty(request.getHeader("Predix-Zone-Id"))) {
+        if (hasText(trimWhitespace(request.getHeader("Predix-Zone-Id")))) {
             zone = request.getHeader("Predix-Zone-Id");
 
-        } else if (StringUtils.isNotEmpty(request.getHeader("X-Identity-Zone-Id"))) {
+        } else if (hasText(trimWhitespace(request.getHeader("X-Identity-Zone-Id")))) {
             zone = request.getHeader("X-Identity-Zone-Id");
         } else {
 
             // get zone from subdomain
             zone = getZoneNameFromRequestHostName(request.getServerName(), this.serviceBaseDomain);
-            if (StringUtils.isEmpty(zone)) {
+            if (!hasText(zone)) {
                 LOGGER.debug("Failed to resolve customer from request because the request does not contain a"
                         + " 'Predix-Zone-Id' or 'X-Identity-Zone-Id' header or a subdomain.");
                 return null;

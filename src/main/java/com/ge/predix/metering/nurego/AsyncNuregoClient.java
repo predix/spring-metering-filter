@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2017 General Electric Company
+ * Copyright 2021 General Electric Company
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,15 @@
 
 package com.ge.predix.metering.nurego;
 
+import static org.springframework.util.StringUtils.hasText;
+import static org.springframework.util.StringUtils.trimWhitespace;
+
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +71,7 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
 
         setupAuthentication(nuregoUsername, nuregoPassword, nuregoInstanceId);
 
-        if (StringUtils.isNotEmpty(url)) {
+        if (hasText(trimWhitespace(url))) {
             Nurego.setApiBase(url);
         }
         this.batchIntervalSeconds = batchIntervalSeconds;
@@ -188,8 +190,8 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
 
     private void setupAuthentication(final String nuregoUsername, final String nuregoPassword,
             final String nuregoInstanceId) {
-        if (StringUtils.isNotEmpty(nuregoUsername) && StringUtils.isNotEmpty(nuregoPassword)
-                && StringUtils.isNotEmpty(nuregoInstanceId)) {
+        if (hasText(trimWhitespace(nuregoUsername)) && hasText(trimWhitespace(nuregoPassword))
+            && hasText(trimWhitespace(nuregoInstanceId))) {
             this.credentials = new HashMap<String, String>() {
                 {
                     put("username", nuregoUsername);
