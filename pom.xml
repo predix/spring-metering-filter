@@ -54,9 +54,11 @@
         <nurego-java.version>2.1</nurego-java.version>
         <jackson.version>2.12.1</jackson.version>
         <spring-security-jwt.version>1.1.1.RELEASE</spring-security-jwt.version>
+        <spring-security-core.version>5.4.5</spring-security-core.version>
         <spring-core.version>5.3.4</spring-core.version>
         <spring-data.version>2.4.5</spring-data.version>
         <httpasyncclient.version>4.1.4</httpasyncclient.version>
+        <httpasyncclient.httpclient.version>4.5.13</httpasyncclient.httpclient.version>
         <slf4j.version>1.7.30</slf4j.version>
         <!-- Test Dependency Version -->
         <mockito.version>1.10.19</mockito.version>
@@ -68,6 +70,11 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpasyncclient</artifactId>
             <version>${httpasyncclient.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>${httpasyncclient.httpclient.version}</version>
         </dependency>
         <dependency>
             <groupId>com.nurego</groupId>
@@ -90,6 +97,21 @@
             <version>${spring-core.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <version>${spring-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <version>${spring-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-core</artifactId>
+            <version>${spring-security-core.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.security.oauth</groupId>
             <artifactId>spring-security-oauth2</artifactId>
             <version>${spring-security-oauth2.version}</version>
@@ -103,6 +125,18 @@
                 <exclusion>
                     <groupId>org.springframework</groupId>
                     <artifactId>spring-context</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-webmvc</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-web</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework.security</groupId>
+                    <artifactId>spring-security-core</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
