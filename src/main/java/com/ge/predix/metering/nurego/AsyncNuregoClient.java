@@ -29,7 +29,6 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -56,10 +55,8 @@ public class AsyncNuregoClient implements NuregoClient, DisposableBean {
     private LocalDateTime tokenExpiration;
     private String token;
 
-    @Autowired
     private AsyncRestTemplate meteringAsyncRestTemplate;
 
-    @Autowired
     private RestTemplate meteringRestTemplate;
 
     private DateTime nextSend;
